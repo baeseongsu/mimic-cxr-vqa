@@ -158,3 +158,11 @@ cython_debug/
 #  and can be added to the global gitignore or merged into this file.  For a more nuclear
 #  option (not recommended) you can uncomment the following to ignore the entire idea folder.
 #.idea/
+
+# ignore files in folder
+mimic-cxr-jpg/*
+chest-imagenome/*
+
+# but keep the folder by keeping .gitkeep file
+!mimic-cxr-jpg/.gitkeep 
+!chest-imagenome/.gitkeep 
