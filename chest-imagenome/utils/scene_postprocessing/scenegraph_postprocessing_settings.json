@@ -1,0 +1,9 @@
+{
+    "SCENE_DIR": "../../silver_dataset/scene_graph",
+    "OUTPUT_DIR": "../../silver_dataset/scene_tabular",
+    "OUTPUT_TYPE": ["attributes", "objects"],
+    "RDF_LEVEL": "study_id",
+    "RESOURCE": "../../semantics/label_to_UMLS_mapping.json",
+    "AGGREGATION": "last",
+    "INCLUDE_SECTIONS": "all"
+}
