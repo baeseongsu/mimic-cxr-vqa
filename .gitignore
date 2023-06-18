@@ -160,9 +160,7 @@ cython_debug/
 #.idea/
 
 # ignore files in folder
-mimic-cxr-jpg/*
-chest-imagenome/*
+debug/*
 
 # but keep the folder by keeping .gitkeep file
-!mimic-cxr-jpg/.gitkeep 
-!chest-imagenome/.gitkeep 
+!debug/.gitkeep
