@@ -170,7 +170,6 @@ mimiccxrvqa/dataset/valid.json
 mimiccxrvqa/dataset/test.json
 
 # but keep the folder by keeping .gitkeep file
-!debug/.gitkeep
 !dataset_builder/preprocessed_data/.gitkeep
 !physionet.org/files/mimic-cxr-jpg/2.0.0/.gitkeep
 !physionet.org/files/chest-imagenome/1.0.0/.gitkeep
