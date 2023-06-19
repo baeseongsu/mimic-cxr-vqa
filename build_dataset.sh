@@ -36,7 +36,7 @@ download_and_extract() {
 
     # Extract if it's a gzip file
     if [[ "$file_name" == *.gz ]]; then
-        gzip -f "$destination_dir/$file_name"
+        gzip -d "$destination_dir/$file_name"
     fi
 }
 
