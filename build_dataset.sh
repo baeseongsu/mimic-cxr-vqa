@@ -1,12 +1,11 @@
 #!/bin/bash
 
-
 # Capture the start time
 start_time=$(date +%s)
 
-# Accept command line parameters
-USERNAME=$1
-PASSWORD=$2
+# Read username and password (for PhysioNet)
+read -p "Username: " USERNAME
+read -s -p "Password: " PASSWORD
 
 # Define directories and file names
 MIMIC_CXR="https://physionet.org/files/mimic-cxr-jpg/2.0.0"
