@@ -65,7 +65,7 @@ To enhance user convenience, we will provide a script that allows you to downloa
 
 The dataset is structured as follows:
 
-```python
+```
 mimiccxrvqa
 └── dataset
     ├── ans2idx.json
