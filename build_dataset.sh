@@ -1,5 +1,9 @@
 #!/bin/bash
 
+
+# Capture the start time
+start_time=$(date +%s)
+
 # Accept command line parameters
 USERNAME=$1
 PASSWORD=$2
@@ -83,10 +87,12 @@ mkdir -p "$SAVE_DIR"
 
 for split in "${SPLITS[@]}"; do
     if [ ! -f "${SAVE_DIR}/${split}_dataset.csv" ]; then
-        python "dataset_builder/${PREPROCESS_SCRIPTS[0]}" \
-            --mimic_cxr_jpg_dir "physionet.org/files/mimic-cxr-jpg/2.0.0/" \
-            --chest_imagenome_dir "physionet.org/files/chest-imagenome/1.0.0/" \
-            --save_dir "$SAVE_DIR"
+        for script in "${PREPROCESS_SCRIPTS[@]}"; do
+            python "dataset_builder/${script}" \
+                --mimic_cxr_jpg_dir "physionet.org/files/mimic-cxr-jpg/2.0.0/" \
+                --chest_imagenome_dir "physionet.org/files/chest-imagenome/1.0.0/" \
+                --save_dir "$SAVE_DIR"
+        done
     fi
 done
 
@@ -99,3 +105,12 @@ for split in "${SPLITS[@]}"; do
         --json_file "mimiccxrvqa/dataset/_${split}.json" \
         --output_path "mimiccxrvqa/dataset/${split}.json"
 done
+
+# Capture the end time
+end_time=$(date +%s)
+
+# Calculate the runtime
+runtime=$((end_time - start_time))
+
+# Display the runtime
+echo "Script runtime: $runtime seconds"
