@@ -5,7 +5,7 @@ import logging
 from tqdm import tqdm
 from program import PROGRAM_LIST
 
-logging.basicConfig(filename="app.log", filemode="w", format="%(name)s - %(levelname)s - %(message)s")
+logging.basicConfig(filename="error.log", filemode="w", format="%(name)s - %(levelname)s - %(message)s")
 
 # Constants
 CONFIG = {
@@ -63,7 +63,7 @@ def format_answer(answer):
     elif answer is None:
         return []
     else:
-        return [a.lower() for a in answer]
+        return sorted([a.lower() for a in answer])
 
 
 def process_label_dataset(label_dataset):
@@ -189,16 +189,16 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
     parser.add_argument("--debug", action="store_true")
-    parser.add_argument("--mimic_iv_dir", type=str, default="../mimic-iv/")
-    parser.add_argument("--mimic_cxr_jpg_dir", type=str, default="../mimic-cxr-jpg")
-    parser.add_argument("--chest_imagenome_dir", type=str, default="../chest-imagenome/")
+    parser.add_argument("--mimic_iv_dir", type=str, required=True)
+    parser.add_argument("--mimic_cxr_jpg_dir", type=str, required=True)
+    parser.add_argument("--chest_imagenome_dir", type=str, required=True)
     parser.add_argument("--label_dataset_path", type=str, default="./preprocessed_data/test_dataset.csv")
-    parser.add_argument("--json_file", type=str, default="../mimiccxrvqa/dataset/test.json")
-    parser.add_argument("--output_path", type=str, default="../mimiccxrvqa/dataset/test_new.json")
+    parser.add_argument("--json_file", type=str, default="../mimiccxrvqa/dataset/_test.json")
+    parser.add_argument("--output_path", type=str, default="../mimiccxrvqa/dataset/test.json")
     # parser.add_argument("--split", type=str, default="test")
     args = parser.parse_args()
 
-    args.split = os.path.basename(args.json_file).split(".")[0]
+    args.split = os.path.basename(args.output_path).split(".")[0]
     print(args)
 
     main(args)
