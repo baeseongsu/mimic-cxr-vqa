@@ -2,6 +2,8 @@
 
 # MIMIC-CXR-VQA &#x1FA7B;
 
+*A new collection of medical visual question answering dataset on MIMIC-CXR database*
+
 </div>
 
 ## Overview
@@ -46,11 +48,22 @@ cd mimic-cxr-vqa
 
 We take data privacy very seriously. All of the data you access through this repository has been carefully prepared to prevent any privacy breaches or data leakage. You can use this data with confidence, knowing that all necessary precautions have been taken.
 
+### Access Requirements
+
+The MIMIC-CXR-VQA dataset is constructed from the MIMIC-CXR-JPG (v2.0.0), Chest ImaGenome (v1.0.0), and MIMIC-IV (v2.0). All these source datasets require a credentialed Physionet license. Due to these requirements and in adherence to the Data Use Agreement (DUA), only credentialed users can access the MIMIC-CXR-VQA dataset files (see Access Policy). To access the source datasets, you must fulfill all of the following requirements:
+
+1. Be a [credentialed user](https://physionet.org/settings/credentialing/)
+    - If you do not have a PhysioNet account, register for one [here](https://physionet.org/register/).
+    - Follow these [instructions](https://physionet.org/credential-application/) for credentialing on PhysioNet.
+    - Complete the "CITI Data or Specimens Only Research" [training course](https://physionet.org/about/citi-course/).
+2. Sign the data use agreement (DUA) for each project
+    - https://physionet.org/sign-dua/mimic-cxr-jpg/2.0.0/
+    - https://physionet.org/sign-dua/chest-imagenome/1.0.0/
+    - https://physionet.org/sign-dua/mimiciv/2.0/
+
 ### Accessing the MIMIC-CXR-VQA Dataset
 
-The MIMIC-CXR-VQA dataset is constructed from the MIMIC-CXR-JPG (v2.0.0), Chest ImaGenome (v1.0.0), and MIMIC-IV (v2.0). All these source datasets require a credentialed Physionet license. Due to these requirements and in adherence to the Data Use Agreement (DUA), only credentialed users can access the MIMIC-CXR-VQA dataset files (see Access Policy).
-
-While the complete MIMIC-CXR-VQA dataset is being prepared for publication on the Physionet platform, we provide partial access to the dataset via this repository for credentialed users. The MIMIC-CXR-VQA dataset mainly comprises three components: an image (I), a question (Q), and an answer (A). In this partial release, we omit the answer (A) and certain metadata, thereby maintaining privacy by preventing any leakage from instance-level information. Moreover, during the dataset's creation, we carefully implemented an unbiased sampling strategy for images, questions, and answers. This ensures no distribution-level leakage, such as the image-question distribution.
+While the complete MIMIC-CXR-VQA dataset is being prepared for publication on the Physionet platform, we provide partial access to the dataset via this repository for credentialed users. The MIMIC-CXR-VQA dataset mainly comprises three components: an image (I), a question (Q), and an answer (A). In this partial release, we omit the answer (A) and certain metadata, thereby maintaining privacy by preventing any instance-level information leakage. Moreover, during the creation of the dataset, we carefully implemented an unbiased sampling strategy for images, questions, and answers. This ensures no distribution-level leakage, such as the image-question distribution.
 
 To access the MIMIC-CXR-VQA dataset, you can run the provided main script (which requires your unique Physionet credentials) in this repository as follows:
 
@@ -63,13 +76,24 @@ During script execution, enter your PhysioNet credentials when prompted:
 - Username: Enter your PhysioNet username and press `Enter`.
 - Password: Enter your PhysioNet password and press `Enter`. The password characters won't appear on screen.
 
-This script performs several actions: 1) downloads the source datasets from Physionet, 2) preprocesses these datasets, and 3) generates the complete MIMIC-CXR-VQA dataset by creating ground-truth answer information.
+This script performs several actions: 1) it downloads the source datasets from Physionet, 2) preprocesses these datasets, and 3) generates the complete MIMIC-CXR-VQA dataset by creating ground-truth answer information.
 
-Ensure to keep your credentials secure. If you encounter any issues, please ensure that you have the necessary permissions, a stable internet connection, and all prerequisite tools installed.
+Ensure you keep your credentials secure. If you encounter any issues, please ensure that you have the necessary permissions, a stable internet connection, and all prerequisite tools installed.
 
 ### Downloading MIMIC-CXR-JPG Images
 
-To enhance user convenience, we will provide a script that allows you to download only the CXR images relevant to the MIMIC-CXR-VQA dataset, rather than downloading all the MIMIC-CXR-JPG images. More details will be provided soon.
+To enhance user convenience, we will provide a script that allows you to download only the CXR images relevant to the MIMIC-CXR-VQA dataset, rather than downloading all the MIMIC-CXR-JPG images.
+
+```
+bash download_images.sh
+```
+
+During script execution, enter your PhysioNet credentials when prompted:
+
+- Username: Enter your PhysioNet username and press `Enter`.
+- Password: Enter your PhysioNet password and press `Enter`. The password characters won't appear on screen.
+
+This script performs several actions: 1) it reads the image paths from the JSON files of the MIMIC-CXR-VQA dataset; 2) uses these paths to download the corresponding images from the MIMIC-CXR-JPG dataset hosted on Physionet; and 3) saves these images locally in the corresponding directories as per their paths.
 
 ### Dataset Structure
 
