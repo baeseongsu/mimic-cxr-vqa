@@ -116,7 +116,12 @@ def main(args):
     label_dataset = label_dataset.set_index("image_id")
 
     # Read json file
-    dataset = json.load(open(args.json_file))
+    if args.split == "train":
+        dataset_part1 = json.load(open(args.json_file.replace(".json", "_part1.json")))
+        dataset_part2 = json.load(open(args.json_file.replace(".json", "_part2.json")))
+        dataset = dataset_part1 + dataset_part2
+    else:
+        dataset = json.load(open(args.json_file))
 
     answer_error_cnt = 0
 
