@@ -1,3 +1,0 @@
-mimiccxrvqa/dataset/_valid.json filter=lfs diff=lfs merge=lfs -text
-mimiccxrvqa/dataset/_test.json filter=lfs diff=lfs merge=lfs -text
-mimiccxrvqa/dataset/_train.json filter=lfs diff=lfs merge=lfs -text
