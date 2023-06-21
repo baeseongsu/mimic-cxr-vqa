@@ -18,6 +18,7 @@ WGET_PARAMS="-r -N -c -np --user $USERNAME --password $PASSWORD"
 # Helper function to download and extract files
 download() {
     local file_url=$1
+    local destination_dir=$2
     local file_name=$(basename "$file_url")
 
     # Download the file

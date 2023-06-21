@@ -1,10 +1,5 @@
 # -*- coding: utf-8 -*-#
 
-#-------------------------------------------------------------------------------
-# Name:         main
-# Description:  the entrance of procedure
-#-------------------------------------------------------------------------------
-
 import os
 import sys
 os.chdir(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))

@@ -817,11 +817,11 @@ if __name__ == "__main__":
     # logging / directory
     parser.add_argument("--wandb", action="store_true", default=False, help="Whether to use wandb logging")
     parser.add_argument("--wandb_entity_name", type=str, default="ehr-vqg")
-    parser.add_argument("--wandb_project_name", type=str, default="phase1-qa-dataset-debugging-seongsu")
+    parser.add_argument("--wandb_project_name", type=str, default="MIMIV-VQA-MedViLL")
     parser.add_argument("--exp_name", type=str, default="")
     parser.add_argument("--image_root", type=str, default="../../data/mimic/re_512_3ch/Train")
     parser.add_argument(
-        "--output_dir", default="/nfs_edlab/dekyung/ehrxsql-dev/xsql/medical_vqa_baseline/medvill/vqa_finetune", type=str, help="The output directory where the model predictions and checkpoints will be written."
+        "--output_dir", default="./saved_results/vqa_finetune", type=str, help="The output directory where the model predictions and checkpoints will be written."
     )
     parser.add_argument("--log_file", default="training.log", type=str, help="The output directory where the log will be written.")
 

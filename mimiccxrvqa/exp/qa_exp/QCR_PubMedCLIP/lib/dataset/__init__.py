@@ -1,1 +1,2 @@
 from .dataset_MIMICCXR import VQAMIMICCXRFeatureDataset
+from .MIMICImageTextDataset import ImageTextDataset 

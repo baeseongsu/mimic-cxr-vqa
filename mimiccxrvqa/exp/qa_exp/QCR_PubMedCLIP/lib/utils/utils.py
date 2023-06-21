@@ -1,32 +1,24 @@
-# -*- coding: utf-8 -*-#
-
-#-------------------------------------------------------------------------------
-# Name:         utils
-# Description:  copy from Hengyuan Hu's repository.  https://github.com/hengyuan-hu/bottom-up-attention-vqa
-# Date:         2020/4/6
-#-------------------------------------------------------------------------------
-
 from __future__ import print_function
 
-import errno
 import os
 import re
-import collections
-import numpy as np
+import json
+import errno
+import logging
 import operator
 import functools
+import itertools
+import collections
+import numpy as np
+import pandas as pd
+import _pickle as cPickle
+from lib.utils.create_dictionary import Dictionary
+
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from torch._six import string_classes
 from torch.utils.data.dataloader import default_collate
-import logging
-from lib.utils.create_dictionary import Dictionary
-import itertools
-import _pickle as cPickle
-import json
-import pandas as pd
-
 
 EPS = 1e-7
 numpy_type_map = {
@@ -245,6 +237,31 @@ def get_size_of_largest_vqa_batch(dataloader):
         if largest_v > v.size()[1]:
             pass
 
+def get_optimizer(cfg, model):
+    base_lr = cfg.TRAIN.OPTIMIZER.BASE_LR
+    params = []
+
+    for name, p in model.named_parameters():
+        if p.requires_grad:
+            params.append({"params": p})
+
+    if cfg.TRAIN.OPTIMIZER.TYPE == "SGD":
+        optimizer = SGD_GC(
+            params,
+            lr=base_lr,
+            momentum=cfg.TRAIN.OPTIMIZER.MOMENTUM,
+            weight_decay=cfg.TRAIN.OPTIMIZER.WEIGHT_DECAY,
+            nesterov=True,
+        )
+    elif cfg.TRAIN.OPTIMIZER.TYPE == "ADAM":
+        optimizer = torch.optim.Adam(
+            params,
+            lr=base_lr,
+            betas=(0.9, 0.999),
+            weight_decay=cfg.TRAIN.OPTIMIZER.WEIGHT_DECAY,
+        )
+    return optimizer
+    
 
 def tfidf_loading(use_tfidf, w_emb, cfg):
     data_dir = cfg.DATASET.DATA_DIR
