@@ -36,7 +36,7 @@ def parse_args():
     parser.add_argument('--gpu', type=int, default=0,
                         help='use gpu device. default:0')
     parser.add_argument('--test', type=bool, default=False, help='Test or train.')
-    parser.add_argument("--wandb_project", type=str, default="phase1-qa-dataset")
+    parser.add_argument("--wandb_project", type=str, default="MIMIC-CXR-VQA-QCR")
 
     args = parser.parse_args()
     return args

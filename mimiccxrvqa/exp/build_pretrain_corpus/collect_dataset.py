@@ -1,14 +1,12 @@
-import re
 import os
+import sys
+import cv2
 import json
 import argparse
 import numpy as np
 import pandas as pd
-from tqdm import tqdm
-import cv2
-from PIL import Image
-from multiprocessing import Pool
 
+from multiprocessing import Pool
 from transformers import AutoTokenizer
 
 
@@ -89,7 +87,7 @@ def check_valid_image(row):
         return False
 
 
-def _preprocess_reports(dataframe, sectioned, chexpert):
+def _preprocess_reports(dataframe, sectioned):
 
     instances = []
 
@@ -115,10 +113,6 @@ def _preprocess_reports(dataframe, sectioned, chexpert):
             len_findings = sectioned_part.len_findings.values[0]
             len_impression = sectioned_part.len_impression.values[0]
 
-            # label information
-            chexpert_part = chexpert[chexpert.study_id == int(sid)]
-            label = list(chexpert_part[chexpert_part == 1].dropna(axis=1).columns)
-
             if len_impression + len_findings == 0:
                 flag = False
             elif len_impression + len_findings <= 253:
@@ -135,7 +129,6 @@ def _preprocess_reports(dataframe, sectioned, chexpert):
             instance = {
                 "id": f"s{sid}",
                 "split": "train",
-                "label": str(label)[1:-1],
                 "text": text,
                 "img": image_path,
             }
@@ -143,7 +136,6 @@ def _preprocess_reports(dataframe, sectioned, chexpert):
             instance = {
                 "id": f"s{sid}",
                 "split": "",
-                "label": "",
                 "text": "",
                 "img": "",
             }
@@ -170,7 +162,6 @@ def main(args):
     if args.debug:
         cxr_meta = cxr_meta[:1000]
         sectioned = sectioned[:1000]
-        # chexpert = chexpert[:200]
 
     # load tokenizer
     tokenizer = AutoTokenizer.from_pretrained("bert-base-uncased", do_lower_case=True)
@@ -185,7 +176,7 @@ def main(args):
     from functools import partial
 
     # parallelize the process
-    non_parallel_args = {"sectioned": sectioned, "chexpert": chexpert}
+    non_parallel_args = {"sectioned": sectioned}
     parallel_function = partial(_preprocess_reports, **non_parallel_args)
 
     # split data into multiple parts
@@ -218,15 +209,15 @@ def main(args):
     results_test = results[results.id.isin(test_studies)]
     results_test["split"] = "test"
     results_test_json = results_test.to_dict("records")
-    write_jsonl(results_test_json, "pretrain_test.jsonl")
+    write_jsonl(results_test_json, os.path.join(args.save_jsonl_dir, "pretrain_test.jsonl"))
     print("pretrain_test.jsonl saved...", len(results_test_json))
     
     # [sig] first, remove test set (= gold patients)
     results = results[~results.id.isin(test_studies)]
 
     # make valid dataset
-    # TODO: Need to check path
-    mimic_cxr_split = pd.read_csv("../../../physionet.org/files/mimic-cxr-jpg/mimic-cxr-2.0.0-split.csv")
+    os.makedirs(args.save_jsonl_dir, exist_ok=True)
+    mimic_cxr_split = pd.read_csv(os.path.join(args.mimic_cxr_db_dir, "mimic-cxr-2.0.0-split.csv"))
     valid_sids = mimic_cxr_split[mimic_cxr_split.split == "validate"].study_id.unique()
     valid_studies = [f"s{sid}" for sid in valid_sids]
     results_valid = results[results.id.isin(valid_studies)]
@@ -254,7 +245,7 @@ if __name__ == "__main__":
     parser.add_argument("--mimic_cxr_report_dir", type=str, default="../../../physionet.org/files/mimic-cxr-jpg/2.0.0/files")
     parser.add_argument("--mimic_cxr_image_dir", type=str, default="../../../physionet.org/files/mimic-cxr-jpg/2.0.0/files")
     parser.add_argument("--resize_img_dir", type=str, default="../../../physionet.org/files/mimic-cxr-jpg/2.0.0/re224_3ch_contour_cropped")
-    parser.add_argument("--save_jsonl_dir", type=str, default="./pretrained_corpus")
+    parser.add_argument("--save_jsonl_dir", type=str, default="../../dataset/pretrained_corpus")
 
     # image
 

@@ -32,15 +32,8 @@ from sklearn.metrics import accuracy_score, f1_score, classification_report, roc
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 import utils.utils as utils
+from modules.projection_module import DINOMIMICClassification
 from datasets.MIMICMultiheadClassificationDataset import EHRMultiheadallClassification
-from datasets.MIMICCompMultiheadCLSDataset import EHRCOMPMultiheadCLS
-from modules.projection_module import DINOMIMICClassification, DINOMIMICCOMPClassification
-
-
-MODEL_SETTEING_DICT = {
-    "phase1": {"model": DINOMIMICClassification, "dataset": EHRMultiheadallClassification},
-    "phase2": {"model": DINOMIMICCOMPClassification, "dataset": EHRCOMPMultiheadCLS},
-}
 
 
 def cal_sample_acc(pred, label):
@@ -54,8 +47,8 @@ def evaluate(args, model=None):
     assert os.path.isdir(args.output_dir)
     cudnn.benchmark = True
     
-    validset = MODEL_SETTEING_DICT[args.dataset_type]["dataset"](args=args, phase="valid", data_aug=None, debug=args.debug)
-    testset = MODEL_SETTEING_DICT[args.dataset_type]["dataset"](args=args, phase="test", data_aug=None, debug=args.debug)
+    validset = EHRMultiheadallClassification(args=args, phase="valid", data_aug=None, debug=args.debug)
+    testset = EHRMultiheadallClassification(args=args, phase="test", data_aug=None, debug=args.debug)
     
     valid_loader = torch.utils.data.DataLoader(
         validset,
@@ -70,7 +63,7 @@ def evaluate(args, model=None):
         pin_memory=True,
     )
     
-    model = MODEL_SETTEING_DICT[args.dataset_type]["model"](args, testset.attr_pool)
+    model = DINOMIMICClassification(args, testset.attr_pool)
     model = model.cuda()
     model = nn.parallel.DistributedDataParallel(model, device_ids=[args.gpu], find_unused_parameters=True)
     checkpoint = torch.load(os.path.join(args.output_dir, "best_val_checkpoint.pth.tar"), map_location="cpu")
@@ -79,11 +72,7 @@ def evaluate(args, model=None):
         model.module.model.load_state_dict(checkpoint["state_dict"]["model"], strict=False)
     model.module.mlps.load_state_dict(checkpoint["state_dict"]["mlps"], strict=False)
 
-    save_log_name = f"valid_log" if not args.reverse_aug else f"valid_reverse_log"
-    # save_log_name = save_log_name + "_bal" if args.balancebd_sampling else save_log_name
-    # save_log_name = save_log_name + "_oversample" if args.alanced_oversampling else save_log_name
-    save_log_name = save_log_name + "_testminsupp10" if args.label_pool == "test_min_supp_10" else save_log_name
-    save_log_name = save_log_name + "_all_template" if args.template_pool == "all" else save_log_name
+    save_log_name = f"valid_log"
     valid_stats = test_network(valid_loader, model, args.n_last_blocks, output_dir=args.output_dir, full_finetune=args.full_finetune, save_log_name=save_log_name)
     with (Path(args.output_dir) / f"{save_log_name}.txt").open("a") as f:
         f.write(f"Epoch {best_epoch}" + "\n")
@@ -94,11 +83,7 @@ def evaluate(args, model=None):
             + "\n"
         )
 
-    save_log_name = f"test_log" if not args.reverse_aug else f"test_reverse_log"
-    # args.balanced_sampling = False  # Not use balancing for testset
-    # args.balanced_oversampling = False  # Not use balancing for testset
-    save_log_name = save_log_name + "_testminsupp10" if args.label_pool == "test_min_supp_10" else save_log_name
-    save_log_name = save_log_name + "_all_template" if args.template_pool == "all" else save_log_name
+    save_log_name = f"test_log" 
     test_stats = test_network(test_loader, model, args.n_last_blocks, output_dir=args.output_dir, full_finetune=args.full_finetune, save_log_name=save_log_name)
     with (Path(args.output_dir) / f"{save_log_name}.txt").open("a") as f:
         f.write(f"Load {len(testset.data_df)} samples for test set" + "\n")
@@ -161,7 +146,7 @@ def finetune_linear_projection(args):
             reinit=not args.wandb_resume,
         )
 
-    trainset = MODEL_SETTEING_DICT[args.dataset_type]["dataset"](args=args, phase="train", data_aug=data_aug, debug=args.debug)
+    trainset = EHRMultiheadallClassification(args=args, phase="train", data_aug=data_aug, debug=args.debug)
     sampler = torch.utils.data.distributed.DistributedSampler(trainset)
     train_loader = torch.utils.data.DataLoader(
         trainset,
@@ -171,7 +156,7 @@ def finetune_linear_projection(args):
         pin_memory=True,
     )
 
-    validset = MODEL_SETTEING_DICT[args.dataset_type]["dataset"](args=args, phase="valid", data_aug=data_aug, debug=args.debug)
+    validset = EHRMultiheadallClassification(args=args, phase="valid", data_aug=data_aug, debug=args.debug)
     val_loader = torch.utils.data.DataLoader(
         validset,
         batch_size=args.batch_size_per_gpu,
@@ -182,7 +167,7 @@ def finetune_linear_projection(args):
         print(f"Data loaded with {len(trainset)} train and {len(validset)} val imgs.")
 
     ### model setup ###
-    model = MODEL_SETTEING_DICT[args.dataset_type]["model"](args, validset.attr_pool)
+    model = DINOMIMICClassification(args, validset.attr_pool)
     model = model.cuda()
     model = nn.SyncBatchNorm.convert_sync_batchnorm(model)
     model = nn.parallel.DistributedDataParallel(model, device_ids=[args.gpu], find_unused_parameters=True)
@@ -313,12 +298,7 @@ def validate_network(val_loader, model, n, avgpool, full_finetune):
     if full_finetune:
         model.module.model.eval()
     metric_logger = utils.MetricLogger(delimiter="  ")
-    # if model.module.num_targets == 2:
     task = "binary"
-    # f1 = F1Score(task=task).cuda()
-    # else:
-    #     task = "multiclass"
-    #     f1 = F1Score(task=task, num_classes=model.module.num_targets, average="micro").cuda()
     total_preds = torch.FloatTensor([]).cuda(non_blocking=True)
     total_labels = torch.LongTensor([]).cuda(non_blocking=True)
     header = "Test:"
@@ -340,12 +320,10 @@ def validate_network(val_loader, model, n, avgpool, full_finetune):
 
         total_preds = torch.cat([total_preds, output], dim=0)
         total_labels = torch.cat([total_labels, data["label"]], dim=0)
-        # micro_f1 = f1(output, data["label"])
 
         batch_size = data["img"].shape[0]
         metric_logger.update(loss=loss.item())
         metric_logger.meters["acc1"].update(acc1.item(), n=batch_size)
-        # metric_logger.meters["micro_f1"].update(micro_f1.item(), n=batch_size)
 
     total_preds = total_preds.cpu().numpy()
     total_labels = total_labels.cpu().numpy()
@@ -391,30 +369,9 @@ def test_network(val_loader, model, n, output_dir, full_finetune=False, split="t
     total_attributes = np.array(total_attributes)
  
     output = {}
-    # if model.module.num_targets == 2:
     task = "binary"
-    # metrics = {
-    #     "auc": AUROC(task=task),
-    #     "f1": F1Score(task=task),
-    #     "acc": Accuracy(task=task),
-    # }
     total_probs = F.softmax(total_preds, dim=1)[:, 1] # probability of positive class (1)
 
-    # elif model.module.num_targets > 2:
-    #     ### only for phase 2 data
-    #     assert args.dataaset_type == "phase2"
-    #     task = "multiclass"
-    #     metrics = {
-    #         "auc": AUROC(task=task, num_classes=model.module.num_targets, average="macro"),
-    #         "f1": F1Score(task=task, num_classes=model.module.num_targets, average="micro"),
-    #         "acc": Accuracy(task=task, num_classes=model.module.num_targets, average="micro"),
-    #     }   
-    #     total_probs = F.softmax(total_preds, dim=1)
-
-    # else:
-    #     raise NotImplementedError
-        
-    # output - micro
     output = {
         **output,
         **{
@@ -422,7 +379,6 @@ def test_network(val_loader, model, n, output_dir, full_finetune=False, split="t
             "micro_f1": f1_score(total_labels, total_probs >= 0.5, average='micro'),
             "micro_auc": roc_auc_score(total_labels, total_probs),
         }
-        # **{f"micro_{k}": metric(total_probs, total_labels) for k, metric in metrics.items()}
     }
     
     # output - per attribute - micro
@@ -432,7 +388,6 @@ def test_network(val_loader, model, n, output_dir, full_finetune=False, split="t
         total_probs_attr = total_probs[total_attributes == attr]
         total_labels_attr = total_labels[total_attributes == attr]
         if len(total_labels_attr.unique()) == 2: # if there are both positive and negative samples
-            # output_attr[attr] = {f"{k}": metric(total_probs_attr, total_labels_attr) for k, metric in metrics.items()}
             output_attr[attr] = {
                 "acc": accuracy_score(total_labels_attr, total_probs_attr >= 0.5),
                 "f1": f1_score(total_labels_attr, total_probs_attr >= 0.5, average='micro'),
@@ -448,21 +403,15 @@ def test_network(val_loader, model, n, output_dir, full_finetune=False, split="t
             "macro_f1_attr": np.mean([v["f1"] for v in output_attr.values()]),
             "macro_auc_attr": np.mean([v["auc"] for v in output_attr.values()]),
         }
-        # **{f"macro_{k}_attr": np.mean([v[k] for v in output_attr.values()]) for k in metrics.keys()}
     }
             
     # output - per object_attribute - micro
     output_objattr = {}
-    # if task == "multiclass":
-    #     for metric in metrics.values():
-    #         metric.average = None
-
     for (obj, attr) in val_loader.dataset.data_df[["object", "attribute"]].drop_duplicates().values:
         total_probs_objattr = total_probs[(total_objects == obj) & (total_attributes == attr)]
         total_labels_objattr = total_labels[(total_objects == obj) & (total_attributes == attr)]
         if len(total_labels_objattr.unique()) == 2: # if there are both positive and negative samples
             objattr = f"{obj}_{attr}"
-            # output_objattr[objattr] = {f"{k}": metric(total_probs_objattr, total_labels_objattr) for k, metric in metrics.items()}
             output_objattr[objattr] = {
                 "acc": accuracy_score(total_labels_objattr, total_probs_objattr >= 0.5),
                 "f1": f1_score(total_labels_objattr, total_probs_objattr >= 0.5, average='micro'),
@@ -478,7 +427,6 @@ def test_network(val_loader, model, n, output_dir, full_finetune=False, split="t
             "macro_f1_objattr": np.mean([v["f1"] for v in output_objattr.values()]),
             "macro_auc_objattr": np.mean([v["auc"] for v in output_objattr.values()]),
         },
-        # **{f"macro_{k}_objattr": np.mean([v[k] for v in output_objattr.values()]) for k in metrics.keys()}
     }
     
     # save output
@@ -534,9 +482,6 @@ def test_network(val_loader, model, n, output_dir, full_finetune=False, split="t
     return output
 
 
-# TODO: Add evalulation code for comparison (presence) using phase 1 model inference
-
-
 if __name__ == "__main__":
     parser = argparse.ArgumentParser("Finetune linear classification on MIMIC-CXR")
     parser.add_argument(
@@ -585,34 +530,20 @@ if __name__ == "__main__":
     #### For MIMIC ####
     parser.add_argument('--seed', default=42, type=int)
     parser.add_argument('--img_size', default=224, type=int)
-    parser.add_argument("--imgroot", default="/nfs_data_storage/mmehrqg/mimic-cxr-jpg/20230110/re224_3ch", type=str)
-    parser.add_argument("--dataroot", default="/nfs_data_storage/mmehrqg/our_dataset_2025/sampled_qa_dataset_all/csv", type=str)
-    # parser.add_argument("--questionroot", default="/nfs_data_storage/mmehrqg/our_dataset_2023/sampled_qa_dataset_all/csv", type=str)
-        
-    parser.add_argument('--dataset_type', default='phase1', type=str, choices=["phase1", "phase2"])
-    parser.add_argument("--template_pool", default="only_att_obj", type=str, choices=["all", "only_attr_obj", "attr_obj"])
-    parser.add_argument("--label_pool", default="all", type=str, choices=["all", "test_min_supp_10", "chexrel", "one_attr_obj"])
+    parser.add_argument("--imgroot", default="../../../physionet.org/files/mimic-cxr-jpg/2.0.0/re512_3ch_contour_cropped", type=str)
+    parser.add_argument("--dataroot", default="../../dataset", type=str)
+    
     parser.add_argument("--cropping_type", dest="cropping_type", type=str, default=None, choices=["img_crop", "feat_crop", "full_img"])
     parser.add_argument("--feature_type", dest="feature_type", type=str, default="only_global", choices=["only_global", "only_local", "both_local_global"])
     parser.add_argument("--from_scratch", dest="from_scratch", action="store_true", help="from the scratch model")
     parser.add_argument("--full_finetune", dest="full_finetune", action="store_true", help="full model finetune or linear probe")
     parser.add_argument("--data_aug", dest="data_aug", action="store_true", help="use data augmentation or not")
-    # parser.add_argument("--balanced_oversampling", action="store_true", help="balanced oversampling for phase1")
     parser.add_argument("--debug", dest="debug", action="store_true", help="debugging mode or not")
-
-    ### For phase2 upperbound
-    parser.add_argument("--num_target_label", default=3, type=int, choices=[1, 2, 3], help="choose number of target comparison label, use all 3 label or w/o no change or only 1 label")
-    parser.add_argument("--target_label", default=None, type=str, help="choose one comparison label if num_target_label == 1")
-    parser.add_argument("--target_attr", default=None, type=str, help="choose target attribute if label_pool = one_attr_obj")
-    parser.add_argument("--target_obj", default=None, type=str, help="choose target object if label_pool = one_attr_obj")
-    # parser.add_argument("--balanced_sampling", action="store_true", help="balanced sampling for comparison label")
-    parser.add_argument("--reverse_aug", action="store_true", help="data augmentation (change input image order)")
-    parser.add_argument("--comparison_type", default="presence", type=str, choices=["comp", "presence"], help="choose comparison type")
 
     ## wandb logging
     parser.add_argument("--wandb", action="store_true", default=False, help="Whether to use wandb logging")
     parser.add_argument("--wandb_entity_name", type=str, default="ehr-vqg")
-    parser.add_argument("--wandb_project_name", type=str, default="phase1-upperbound")
+    parser.add_argument("--wandb_project_name", type=str, default="mimic-cxr-vqa-reference")
     parser.add_argument("--wandb_id", type=str, default=None)
     parser.add_argument("--wandb_resume", action="store_true", default=False, help="Whether to allow wandb resume")
 
@@ -622,8 +553,3 @@ if __name__ == "__main__":
     else:
         model = finetune_linear_projection(args)
         evaluate(args, model)
-
-
-    # parser.add_argument("--imgroot", default="/nfs_data_storage/mmehrqg/mimic-cxr-jpg/20230110/re224_3ch", type=str)
-    # parser.add_argument("--dataroot", default="/nfs_data_storage/mmehrqg/our_dataset/preprocessed_data", type=str)
-    # parser.add_argument("--questionroot", default="/nfs_data_storage/mmehrqg/our_dataset/sampled_qa_dataset_all/csv", type=str)
