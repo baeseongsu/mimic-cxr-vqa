@@ -1,12 +1,14 @@
+import re
 import os
-import sys
-import cv2
 import json
 import argparse
 import numpy as np
 import pandas as pd
-
+from tqdm import tqdm
+import cv2
+from PIL import Image
 from multiprocessing import Pool
+
 from transformers import AutoTokenizer
 
 
@@ -17,34 +19,28 @@ def write_jsonl(data, path):
 
 
 def load_mimic_cxr_meta(mimic_cxr_db_dir):
-    
     # load raw data
     cxr_meta = pd.read_csv(os.path.join(mimic_cxr_db_dir, "mimic-cxr-2.0.0-metadata.csv"))
 
     # build a new column: StudyDateTime
-    cxr_meta["StudyDateTime"] = pd.to_datetime(
-        cxr_meta.StudyDate.astype(str).apply(lambda x: f"{x[:4]}-{x[4:6]}-{x[6:]}") + " " + \
-        cxr_meta.StudyTime.apply(lambda x: "%010.3f" % x)
-    )
-    
+    cxr_meta["StudyDateTime"] = pd.to_datetime(cxr_meta.StudyDate.astype(str).apply(lambda x: f"{x[:4]}-{x[4:6]}-{x[6:]}") + " " + cxr_meta.StudyTime.apply(lambda x: "%010.3f" % x))
+
     # build a new column: StudyOrder
     cxr_meta_ = cxr_meta.copy()
     cxr_meta_ = cxr_meta_.sort_values(by=["subject_id", "study_id", "StudyDateTime"])
     cxr_meta_ = cxr_meta_.drop_duplicates(subset=["subject_id", "study_id"], keep="first").copy()
-    cxr_meta_["StudyDateTime_study_id"] = cxr_meta_['StudyDateTime'].astype(str) + cxr_meta_['study_id'].astype(str)
-    cxr_meta_["StudyDateTime_study_id"] = pd.to_datetime(cxr_meta_['StudyDateTime_study_id'])
+    cxr_meta_["StudyDateTime_study_id"] = cxr_meta_["StudyDateTime"].astype(str) + cxr_meta_["study_id"].astype(str)
+    cxr_meta_["StudyDateTime_study_id"] = pd.to_datetime(cxr_meta_["StudyDateTime_study_id"])
     cxr_meta_["StudyOrder"] = cxr_meta_.groupby(["subject_id"])["StudyDateTime_study_id"].rank(method="dense")
-    cxr_meta["StudyOrder"] = cxr_meta['study_id'].map(cxr_meta_[["study_id", "StudyOrder"]].set_index('study_id')['StudyOrder'])
+    cxr_meta["StudyOrder"] = cxr_meta["study_id"].map(cxr_meta_[["study_id", "StudyOrder"]].set_index("study_id")["StudyOrder"])
 
     # Assumption: Use only frontal images
     cxr_meta = cxr_meta[cxr_meta["ViewPosition"].isin(["AP", "PA"])].reset_index()
 
     # Assumption: Given the same study_id, use only one image (studydatetime-first + dicom_id-first)
-    cxr_meta = cxr_meta.sort_values(['study_id', 'StudyDateTime', 'dicom_id'], ascending=[True, True, True])
-    cxr_meta = cxr_meta[
-        cxr_meta['dicom_id'].isin(cxr_meta.groupby(['study_id']).dicom_id.first().values)
-    ]
-    assert cxr_meta.groupby(['study_id', 'StudyDateTime']).dicom_id.nunique().value_counts().size == 1
+    cxr_meta = cxr_meta.sort_values(["study_id", "StudyDateTime", "dicom_id"], ascending=[True, True, True])
+    cxr_meta = cxr_meta[cxr_meta["dicom_id"].isin(cxr_meta.groupby(["study_id"]).dicom_id.first().values)]
+    assert cxr_meta.groupby(["study_id", "StudyDateTime"]).dicom_id.nunique().value_counts().size == 1
 
     return cxr_meta
 
@@ -65,7 +61,6 @@ def preprocess_sectioned(sectioned):
 
 
 def check_valid_image(row):
-
     row = row[1]
 
     # load an image
@@ -87,12 +82,10 @@ def check_valid_image(row):
         return False
 
 
-def _preprocess_reports(dataframe, sectioned):
-
+def _preprocess_reports(dataframe, sectioned, chexpert):
     instances = []
 
     for row in dataframe.iterrows():
-
         flag = True
 
         if not check_valid_image(row):
@@ -113,6 +106,10 @@ def _preprocess_reports(dataframe, sectioned):
             len_findings = sectioned_part.len_findings.values[0]
             len_impression = sectioned_part.len_impression.values[0]
 
+            # label information
+            chexpert_part = chexpert[chexpert.study_id == int(sid)]
+            label = list(chexpert_part[chexpert_part == 1].dropna(axis=1).columns)
+
             if len_impression + len_findings == 0:
                 flag = False
             elif len_impression + len_findings <= 253:
@@ -129,6 +126,7 @@ def _preprocess_reports(dataframe, sectioned):
             instance = {
                 "id": f"s{sid}",
                 "split": "train",
+                "label": str(label)[1:-1],
                 "text": text,
                 "img": image_path,
             }
@@ -136,6 +134,7 @@ def _preprocess_reports(dataframe, sectioned):
             instance = {
                 "id": f"s{sid}",
                 "split": "",
+                "label": "",
                 "text": "",
                 "img": "",
             }
@@ -148,7 +147,6 @@ def _preprocess_reports(dataframe, sectioned):
 
 
 def main(args):
-
     # load dataset
     cxr_meta = load_mimic_cxr_meta(args.mimic_cxr_db_dir)
 
@@ -162,6 +160,7 @@ def main(args):
     if args.debug:
         cxr_meta = cxr_meta[:1000]
         sectioned = sectioned[:1000]
+        # chexpert = chexpert[:200]
 
     # load tokenizer
     tokenizer = AutoTokenizer.from_pretrained("bert-base-uncased", do_lower_case=True)
@@ -176,7 +175,7 @@ def main(args):
     from functools import partial
 
     # parallelize the process
-    non_parallel_args = {"sectioned": sectioned}
+    non_parallel_args = {"sectioned": sectioned, "chexpert": chexpert}
     parallel_function = partial(_preprocess_reports, **non_parallel_args)
 
     # split data into multiple parts
@@ -204,20 +203,20 @@ def main(args):
     CHEST_IMAGENOME_DIR = "../../../physionet.org/files/chest-imagenome/1.0.0"
     gold_dataset = pd.read_csv(os.path.join(CHEST_IMAGENOME_DIR, "gold_dataset/gold_attributes_relations_500pts_500studies1st.txt"), sep="\t")
     gold_pids = gold_dataset["patient_id"].unique()
-    gold_sids = cxr_meta[cxr_meta['subject_id'].isin(gold_pids)]["study_id"]  # 2502 studies
+    gold_sids = cxr_meta[cxr_meta["subject_id"].isin(gold_pids)]["study_id"]  # 2502 studies
     test_studies = [f"s{sid}" for sid in gold_sids]
     results_test = results[results.id.isin(test_studies)]
     results_test["split"] = "test"
     results_test_json = results_test.to_dict("records")
-    write_jsonl(results_test_json, os.path.join(args.save_jsonl_dir, "pretrain_test.jsonl"))
+    write_jsonl(results_test_json, "pretrain_test.jsonl")
     print("pretrain_test.jsonl saved...", len(results_test_json))
-    
+
     # [sig] first, remove test set (= gold patients)
     results = results[~results.id.isin(test_studies)]
 
     # make valid dataset
-    os.makedirs(args.save_jsonl_dir, exist_ok=True)
-    mimic_cxr_split = pd.read_csv(os.path.join(args.mimic_cxr_db_dir, "mimic-cxr-2.0.0-split.csv"))
+    # TODO: Need to check path
+    mimic_cxr_split = pd.read_csv("../../../physionet.org/files/mimic-cxr-jpg/mimic-cxr-2.0.0-split.csv")
     valid_sids = mimic_cxr_split[mimic_cxr_split.split == "validate"].study_id.unique()
     valid_studies = [f"s{sid}" for sid in valid_sids]
     results_valid = results[results.id.isin(valid_studies)]
@@ -234,7 +233,6 @@ def main(args):
 
 
 if __name__ == "__main__":
-
     parser = argparse.ArgumentParser()
 
     # debug
@@ -245,7 +243,7 @@ if __name__ == "__main__":
     parser.add_argument("--mimic_cxr_report_dir", type=str, default="../../../physionet.org/files/mimic-cxr-jpg/2.0.0/files")
     parser.add_argument("--mimic_cxr_image_dir", type=str, default="../../../physionet.org/files/mimic-cxr-jpg/2.0.0/files")
     parser.add_argument("--resize_img_dir", type=str, default="../../../physionet.org/files/mimic-cxr-jpg/2.0.0/re224_3ch_contour_cropped")
-    parser.add_argument("--save_jsonl_dir", type=str, default="../../dataset/pretrained_corpus")
+    parser.add_argument("--save_jsonl_dir", type=str, default="./pretrained_corpus")
 
     # image
 

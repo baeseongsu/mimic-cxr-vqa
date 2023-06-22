@@ -1,51 +1,43 @@
-import json
 import os
-import random
 import re
-import pandas as pd
+import json
+import random
 
-from make_arrow import make_arrow, make_arrow_mimic_cxr
+from make_arrow import make_arrow
 
 
-
-def prepro_mimic_cxr(min_length=3):
+def prepro_mimiccxr(
+    data_root="data/pretrain_data/mimiccxr",
+    image_root="../../../physionet.org/files/mimic-cxr-jpg/2.0.0/re512_3ch_contour_cropped",
+    min_length=3,
+):
     random.seed(42)
 
-    data = {
-        "train": [],
-        "val": [],
-        "test": []
-    }
+    data = {"train": [], "val": [], "test": []}
 
-    mimiccxr_image_root = "../../../physionet.org/files/mimic-cxr-jpg/2.0.0/re512_3ch_contour_cropped"
-    for split, file in zip(["train", "val", "test"], ["train", "valid", "test"]):
-        path = os.path.join(mimiccxr_image_root, f"pretrain_{file}.jsonl")
-        samples = pd.DataFrame([json.loads(sample) for sample in open(path).read().strip().split("\n")])
-        for sample_idx, sample in samples.iterrows():
-            img_path = sample["img"]
-            chexpert = [sample["label"]]
-            chexpert = [re.sub("'", "", chex) for chex in chexpert]
+    for split, file_name in zip(["train", "val", "test"], ["pretrain_train.jsonl", "pretrain_valid.jsonl", "pretrain_test.jsonl"]):
+        path = os.path.join(data_root, file_name)
+
+        with open(path, "r") as f:
+            samples = [json.loads(sample) for sample in f.readlines()]
+
+        for sample in samples:
+            breakpoint()
+            img_path = os.path.join(image_root, sample["img"])
+
             texts = [sample["text"]]
             texts = [re.sub(r"\s+", " ", text.strip()) for text in texts]
             texts = [text for text in texts if len(text.split()) >= min_length]
             if len(texts) > 0:
-                data[split].append({
-                    "img_path": img_path,
-                    "texts": texts,
-                    "chexpert": chexpert,
-                })
+                data[split].append({"img_path": img_path, "texts": texts})
 
-    make_arrow_mimic_cxr(data, "mimic_cxr", "data/pretrain_arrows/")
+    make_arrow(data, "mimic_cxr", "data/pretrain_arrows/")
 
 
 def prepro_medicat(min_length=3):
     random.seed(42)
 
-    data = {
-        "train": [],
-        "val": [],
-        "test": []
-    }
+    data = {"train": [], "val": [], "test": []}
 
     data_root = "data/pretrain_data/medicat"
     image_root = f"{data_root}/release/figures/"
@@ -67,16 +59,12 @@ def prepro_medicat(min_length=3):
             texts = []
             if "s2_caption" in sample and len(sample["s2_caption"]) > 0:
                 texts.append(sample["s2_caption"])
-            if "s2orc_references" in sample and sample["s2orc_references"] is not None and len(
-                    sample["s2orc_references"]) > 0:
+            if "s2orc_references" in sample and sample["s2orc_references"] is not None and len(sample["s2orc_references"]) > 0:
                 texts.extend(sample["s2orc_references"])
             texts = [re.sub(r"\s+", " ", text.strip()) for text in texts]
             texts = [text for text in texts if len(text.split()) >= min_length]
             if len(texts) > 0:
-                data[split].append({
-                    "img_path": img_path,
-                    "texts": texts
-                })
+                data[split].append({"img_path": img_path, "texts": texts})
 
     make_arrow(data, "medicat", "data/pretrain_arrows/")
 
@@ -84,62 +72,50 @@ def prepro_medicat(min_length=3):
 def prepro_roco(min_length=3):
     random.seed(42)
 
-    data = {
-        "train": [],
-        "val": [],
-        "test": []
-    }
+    data = {"train": [], "val": [], "test": []}
     roco_data_root = "data/pretrain_data/roco"
     roco_image_root = "data/pretrain_data/roco/{}/radiology/images/"
     medicat_roco_data_root = "data/pretrain_data/medicat"
     medicat_roco_paths = {
         "train": f"{medicat_roco_data_root}/net/nfs2.corp/allennlp/sanjays/roco_files/roco_train_references.jsonl",
         "val": f"{medicat_roco_data_root}/net/nfs2.corp/allennlp/sanjays/roco_files/roco_val_references.jsonl",
-        "test": f"{medicat_roco_data_root}/net/nfs2.corp/allennlp/sanjays/roco_files/roco_test_references.jsonl"
+        "test": f"{medicat_roco_data_root}/net/nfs2.corp/allennlp/sanjays/roco_files/roco_test_references.jsonl",
     }
 
     medicat2roco = {}
     for split in ["train", "val", "test"]:
         with open(f"{roco_data_root}/{split}/radiology/dlinks.txt", "r") as fp:
             for line in fp:
-                str_splits = line.strip().split('\t')
-                medicat2roco[str_splits[1].split(' ')[2].split('/')[-1].split('.')[0] + "_" + str_splits[-1]] = \
-                str_splits[0]
+                str_splits = line.strip().split("\t")
+                medicat2roco[str_splits[1].split(" ")[2].split("/")[-1].split(".")[0] + "_" + str_splits[-1]] = str_splits[0]
 
     for split, path in medicat_roco_paths.items():
         samples = [json.loads(sample) for sample in open(path).read().strip().split("\n")]
         for sample in samples:
             img_path = os.path.join(roco_image_root.format(split), medicat2roco[sample["roco_image_id"]] + ".jpg")
             texts = []
-            if "gorc_references" in sample and sample["gorc_references"] is not None and len(
-                    sample["gorc_references"]) > 0:
+            if "gorc_references" in sample and sample["gorc_references"] is not None and len(sample["gorc_references"]) > 0:
                 texts.extend(sample["gorc_references"])
             texts = [re.sub(r"\s+", " ", text.strip()) for text in texts]
             texts = [text for text in texts if len(text.split()) >= min_length]
             if len(texts) > 0:
-                data[split].append({
-                    "img_path": img_path,
-                    "texts": texts
-                })
+                data[split].append({"img_path": img_path, "texts": texts})
 
     for split in ["train", "val", "test"]:
         with open(f"{roco_data_root}/{split}/radiology/captions.txt", "r") as fp:
             for line in fp:
-                str_splits = line.strip().split('\t')
+                str_splits = line.strip().split("\t")
                 if len(str_splits) == 2:
                     img_path = os.path.join(roco_image_root.format(split), str_splits[0] + ".jpg")
                     texts = [str_splits[1]]
                     texts = [re.sub(r"\s+", " ", text.strip()) for text in texts]
                     texts = [text for text in texts if len(text.split()) >= min_length]
                     if len(texts) > 0:
-                        data[split].append({
-                            "img_path": img_path,
-                            "texts": texts
-                        })
+                        data[split].append({"img_path": img_path, "texts": texts})
     make_arrow(data, "roco", "data/pretrain_arrows/")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
+    prepro_mimic_cxr()
     prepro_medicat()
     prepro_roco()
-    prepro_mimic_cxr()

@@ -9,6 +9,7 @@ from pathlib import Path
 from tqdm import tqdm
 
 # local folder import
+sys.path.append(os.path.dirname(os.path.realpath(__file__)))
 import section_parser as sp
 
 parser = argparse.ArgumentParser()

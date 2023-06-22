@@ -32,19 +32,12 @@ def main(_config):
     loggers = [tb_logger, wb_logger]
 
     # Callback
-    checkpoint_callback = pl.callbacks.ModelCheckpoint(
-        save_top_k=1,
-        verbose=True,
-        monitor="val/the_metric",
-        mode="max",
-        save_last=True,
-        save_weights_only=True if "finetune" in exp_name else False
-    )
+    checkpoint_callback = pl.callbacks.ModelCheckpoint(save_top_k=1, verbose=True, monitor="val/the_metric", mode="max", save_last=True, save_weights_only=True if "finetune" in exp_name else False)
     lr_callback = pl.callbacks.LearningRateMonitor(logging_interval="step")
     callbacks = [checkpoint_callback, lr_callback]
 
     # Training Hyper-Parameters
-    num_gpus = (_config["num_gpus"] if isinstance(_config["num_gpus"], int) else len(_config["num_gpus"]))
+    num_gpus = _config["num_gpus"] if isinstance(_config["num_gpus"], int) else len(_config["num_gpus"])
     grad_steps = max(_config["batch_size"] // (_config["per_gpu_batchsize"] * num_gpus * _config["num_nodes"]), 1)
     max_steps = _config["max_steps"] if _config["max_steps"] is not None else None
     max_epochs = _config["max_epoch"] if max_steps is None else 1000
@@ -70,7 +63,7 @@ def main(_config):
         weights_summary="top",
         fast_dev_run=_config["fast_dev_run"],
         val_check_interval=_config["val_check_interval"],
-        default_root_dir=_config["default_root_dir"]
+        default_root_dir=_config["default_root_dir"],
     )
 
     if not _config["test_only"]:
