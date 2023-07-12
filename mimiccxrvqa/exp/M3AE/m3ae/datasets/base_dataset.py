@@ -1,6 +1,7 @@
 import io
 import os
 import sys
+import json
 import torch
 import random
 import pandas as pd
@@ -44,11 +45,14 @@ class BaseDataset(torch.utils.data.Dataset):
         self.label_column_name = label_column_name
         
         # Image Transformations
-        first_dataset_name = '_'.join(self.names[0].split('_')[:-1])
+        first_dataset_name = '_'.join(self.names[0].split('_')[:2])
         if first_dataset_name in ['vqa_mmehr', 'mimic_cxr'] and len(self.names)==1:
-            transform_keys = ['mmehr']
-            self.transforms = keys_to_transforms(transform_keys, size=image_size)
+            if "train" not in names[0]:
+                transform_keys = ['mmehr']
+            else:
+                transform_keys = ['mmehr']
             self.clip_transform = False
+            self.transforms = keys_to_transforms(transform_keys, size=image_size)
         else:
             if "train" not in names[0]:
                 transform_keys = [transform_key.replace("_randaug", "") for transform_key in transform_keys]
@@ -59,6 +63,7 @@ class BaseDataset(torch.utils.data.Dataset):
                 if 'clip' in transform_key:
                     self.clip_transform = True
                     break
+        print(transform_keys)
 
         # Read Texts
         if len(names) != 0:
@@ -69,12 +74,15 @@ class BaseDataset(torch.utils.data.Dataset):
             ]
 
             if len(tables) == 0:
-                tables = self.csv2arrow(data_dir, names)
-                print(f"Load {len(tables)} csv file(s) instead of arrow file(s)...")
+                tables = self.json2arrow(data_dir, names)
+                print(f"Load {len(tables)} json file(s) instead of arrow file(s)...")
 
             self.table_names = list()
             for i, name in enumerate(names):
-                self.table_names += [name] * len(tables[i])
+                try:
+                    self.table_names += [name] * len(tables[i])
+                except:
+                    import pdb; pdb.set_trace()
             self.table = pa.concat_tables(tables, promote=True)
             if text_column_name != "":
                 self.text_column_name = text_column_name
@@ -246,19 +254,20 @@ class BaseDataset(torch.utils.data.Dataset):
 
         return dict_batch
 
-    def csv2arrow(self, data_dir, names):
-        csvs = [
-                pd.read_csv(f"{data_dir}/{name}.csv", low_memory=False)
+    def json2arrow(self, data_dir, names):
+        print(f"Load from json: {data_dir}/{names}.json")
+        jsons = [
+                pd.DataFrame(json.load(open(os.path.join(data_dir, f"{name}.json"))))
                 for name in names
-                if os.path.isfile(f"{data_dir}/{name}.csv")
+                if os.path.isfile(os.path.join(data_dir, f"{name}.json"))
             ]
 
-        IMAGE_ROOT = "../../../physionet.org/files/mimic-cxr-jpg/2.0.0/re512_3ch_contour_cropped"
+        IMAGE_ROOT = "../../../physionet.org/files/mimic-cxr-jpg/re512_3ch_contour_cropped"
         dataset_name = "vqa_mmehr"
         arrows = []
         questions = []
 
-        for samples, name in zip(csvs, names):
+        for samples, name in zip(jsons, names):
             q2id = {k: i for i, k in enumerate(set(samples.question))}
             samples["qid"] = samples["question"].apply(lambda x: q2id[x])
             samples["answer"] = samples["answer"].apply(lambda x: [] if pd.isna(x) else str(x).lower().split("|"))
@@ -269,14 +278,16 @@ class BaseDataset(torch.utils.data.Dataset):
                 qid = sample["qid"]
                 answer = sample["answer"]
                 answer_type = "CLOSED"  # TODO: open/closed
-                question_type = sample["category_type"]  # TODO: open/closed
+                content_type = sample["content_type"]  # TODO: open/closed
+                semantic_type = sample["semantic_type"]  # TODO: open/closed
                 questions.append({
                     "img_path": img_path,
                     "qid": qid,
                     "question": question,
                     "answer": answer,
                     "answer_type": answer_type,
-                    "question_type" : question_type,
+                    "content_type" : content_type,
+                    "semantic_type": semantic_type,
                 })
             
             assert dataset_name in name

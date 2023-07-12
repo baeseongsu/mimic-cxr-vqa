@@ -15,7 +15,7 @@ class VQAMMEHRDataset(BaseDataset):
         
         if kwargs["exp_name"] != "task_finetune_vqa_mmehr":
             suffix = kwargs["exp_name"].split("task_finetune_vqa_mmehr_")[-1]
-            if suffix == "ub":
+            if suffix == "ref":
                 if split in ["val", "test"]:
                     names = [name + f"_{suffix}" for name in names]
             else:
@@ -40,7 +40,7 @@ class VQAMMEHRDataset(BaseDataset):
         labels = self.table["answer_labels"][index][question_index].as_py()
         scores = self.table["answer_scores"][index][question_index].as_py()
         answer_types = self.table["answer_type"][index][question_index].as_py()
-        question_types = self.table["question_type"][index][question_index].as_py()
+        content_types = self.table["content_type"][index][question_index].as_py()
 
         return {
             "image": image_tensor,
@@ -49,7 +49,7 @@ class VQAMMEHRDataset(BaseDataset):
             "vqa_labels": labels,
             "vqa_scores": scores,
             "answer_types": answer_types,
-            "question_types": question_types,
+            "content_types": content_types,
             "qid": question_index,
             "iid": index,
         }

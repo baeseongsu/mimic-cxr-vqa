@@ -175,8 +175,8 @@ def task_finetune_vqa_mmehr():
     max_text_len = 50
     input_text_embed_size = 768
     vit = 'ViT-B/32'
-    train_transform_keys = ["clip"]
-    val_transform_keys = ["clip"]
+    train_transform_keys = ["mmehr"]
+    val_transform_keys = ["mmehr"]
     input_image_embed_size = 768
     image_size = 512
     valid_eval = False
@@ -186,8 +186,8 @@ def task_finetune_vqa_mmehr():
 
 
 @ex.named_config
-def task_finetune_vqa_mmehr_ub():
-    exp_name = "task_finetune_vqa_mmehr_ub"
+def task_finetune_vqa_mmehr_ref():
+    exp_name = "task_finetune_vqa_mmehr_ref"
     datasets = ["vqa_mmehr"]
     loss_names = _loss_names({"vqa": 1})
     batch_size = 64
@@ -203,8 +203,8 @@ def task_finetune_vqa_mmehr_ub():
     max_text_len = 50
     input_text_embed_size = 768
     vit = 'ViT-B/32'
-    train_transform_keys = ["clip"]
-    val_transform_keys = ["clip"]
+    train_transform_keys = ["mmehr"]
+    val_transform_keys = ["mmehr"]
     input_image_embed_size = 768
     image_size = 512
     valid_eval = False

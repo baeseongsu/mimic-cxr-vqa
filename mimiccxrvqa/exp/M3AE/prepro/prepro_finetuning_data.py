@@ -7,15 +7,14 @@ import pandas as pd
 
 sys.path.append(os.path.dirname(__file__))
 from tqdm import tqdm
-from make_arrow import make_arrow_vqa
+from make_arrow import make_arrow_mmehr
 
 
 def prepro_vqa_mimiccxrvqa(
-    data_root="../../../dataset",
-    image_root="../../../physionet.org/files/mimic-cxr-jpg/2.0.0/re512_3ch_contour_cropped",
+    # data_root="../../../dataset",
+    data_root="/nfs_data_storage/mimiccxrvqa/dataset",
+    image_root="../../../../physionet.org/files/mimic-cxr-jpg/re512_3ch_contour_cropped",
 ):
-    # data_root = "../../../dataset"
-    # image_root = "../../../physionet.org/files/mimic-cxr-jpg/2.0.0/re512_3ch_contour_cropped"
 
     random.seed(42)
 
@@ -48,8 +47,11 @@ def prepro_vqa_mimiccxrvqa(
                     "semantic_type": semantic_type,  # only exist in mimiccxrvqa
                 }
             )
-    make_arrow_vqa(data, "vqa_mimiccxrvqa", "data/finetune_arrows/")
 
+    for split, questions in data.items():
+        print(f"Make arrow file for {split} data")
+        _ = make_arrow_mmehr(questions, split, "vqa_mmehr", "data/finetune_arrows/")
+    
 
 def prepro_vqa_vqa_rad(
     data_root="data/finetune_data/vqa_rad",

@@ -1,4 +1,5 @@
 import os
+import json
 import torch
 import pickle
 import warnings
@@ -295,12 +296,12 @@ class PairwiseMetrics(nn.Module):
         suffix = pl_module.hparams.config["exp_name"].split("task_finetune_vqa_mmehr_")[-1]
 
         # hard coding
-        data_root = "../../../dataset/" 
+        data_root = "/nfs_data_storage/mimiccxrvqa/dataset/" 
         ans2label = json.load(open(os.path.join(data_root, "ans2idx.json"), "rb"))
         self.true_idx = ans2label['yes']
-        assert suffix == "ub"
-
-        self.test_df = pd.read_csv(f"{data_dir}{dataset_name}_{phase}_{suffix}.csv", low_memory=False)
+        assert suffix == "ref"
+        phase = 'valid' if phase == 'val' else phase
+        self.test_df = pd.DataFrame(json.load(open(os.path.join(data_root, f"{phase}_ref.json")))) 
         self.obj_att_pairs = sorted(set(self.test_df.groupby(["object", "attribute"]).image_id.count().index.unique()))
         self.result_df = {}
 

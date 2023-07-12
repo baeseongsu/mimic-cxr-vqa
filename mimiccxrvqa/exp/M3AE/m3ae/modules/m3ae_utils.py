@@ -33,7 +33,7 @@ def set_metrics(pl_module):
                         setattr(pl_module, f"val_{k}_loss", Scalar())
                         setattr(pl_module, f"test_{k}_score", MMEHRScore())
                         setattr(pl_module, f"test_{k}_loss", Scalar())
-                        if "ub" in pl_module.hparams.config['exp_name']:
+                        if "ref" in pl_module.hparams.config['exp_name']:
                             setattr(pl_module, f"val_{k}_pairwise_metrics", PairwiseMetrics(pl_module, "val"))
                             setattr(pl_module, f"test_{k}_pairwise_metrics", PairwiseMetrics(pl_module, "test"))
 
@@ -137,7 +137,7 @@ def epoch_wrapup(pl_module, test=False):
 
                     logging_path = os.path.join(saved_dir, pl_module.hparams.config["exp_name"]+f"_{phase}_log.txt")
 
-                    if "ub" in pl_module.hparams.config["exp_name"]:
+                    if "ref" in pl_module.hparams.config["exp_name"]:
                         _best_metrics = getattr(pl_module, f"{phase}_{loss_name}_pairwise_metrics").forward(
                             getattr(pl_module, f"{phase}_{loss_name}_score").y_trues,
                             getattr(pl_module, f"{phase}_{loss_name}_score").y_preds,

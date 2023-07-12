@@ -6,6 +6,7 @@ import pandas as pd
 
 from arguments import CONFIG, TEMPLATE_ARG_DICT, COMB_LIST
 
+
 def config():
     parser = argparse.ArgumentParser(description="preprocessing upperbound dataset")
 
@@ -18,6 +19,7 @@ def config():
     args = parser.parse_args()
 
     return args
+
 
 def load_bbox_information(args):
     if args.split == "test":
@@ -41,6 +43,7 @@ def load_bbox_information(args):
         bbox_info = bbox_info.rename(columns={"bbox_name": "object"})
 
     return bbox_info
+
 
 # Process for gold dataset
 def preprocess_gold_bbox_for_mediastinum(df):
@@ -85,6 +88,7 @@ def preprocess_gold_bbox_for_mediastinum(df):
     df = pd.concat([df, med], ignore_index=True).sort_values(["image_id", "bbox_name"]).reset_index(drop=True).copy()
     return df
 
+
 def process_label_dataset(label_dataset):
     # Perform any necessary preprocessing or filtering on label_dataset
     label_dataset = label_dataset[~label_dataset["object"].isin(CONFIG["REMOVED_OBJS"])]
@@ -110,19 +114,18 @@ def convert_qa_to_upperbound_df(label_dataset, dataset):
 
 
 def main(args):
-    if args.split == "train":
-        args.split = "valid"
+    # Load dataset
     dataset = json.load(open(os.path.join(args.datadir, f"{args.split}.json")))
     dataset = pd.DataFrame(dataset)
     dataset = dataset.rename({"argcomb_object": "object", "argcomb_attribute": "attribute", "argcomb_category": "category"}, axis=1)
-    dataset = pd.concat([dataset.drop(['template_arguments'], axis=1), dataset['template_arguments'].apply(pd.Series)], axis=1)
+    dataset = pd.concat([dataset.drop(["template_arguments"], axis=1), dataset["template_arguments"].apply(pd.Series)], axis=1)
     dataset["object"] = dataset["object"].apply(lambda x: list(x.values()))
     dataset["attribute"] = dataset["attribute"].apply(lambda x: list(x.values()))
     dataset["category"] = dataset["category"].apply(lambda x: list(x.values()))
     print(f"Load {len(dataset)} qa samples for {args.split} set ({dataset.image_id.nunique()} images)")
 
     # Load labeled dataset
-    label_dataset_path = f"../../../../../dataset_builder/preprocessed_data/{args.split}_dataset.csv"
+    label_dataset_path = os.path.join(args.datadir, f"preprocessed_data/{args.split}_dataset.csv")
     label_dataset = pd.read_csv(label_dataset_path)
     label_dataset = label_dataset[["image_id", "bbox", "relation", "label_name", "categoryID", "object_id"]]
     label_dataset = label_dataset.rename(columns={"dicom_id": "image_id", "bbox": "object", "label_name": "attribute", "categoryID": "category"})
@@ -137,11 +140,11 @@ def main(args):
     # Process label_dataset
     label_dataset = process_label_dataset(label_dataset)
     label_dataset = label_dataset[(~label_dataset.coord224.isna()) & (label_dataset.coord224 != "[0, 0, 0, 0]")]
-    
+
     label_dataset = convert_qa_to_upperbound_df(label_dataset, dataset)
     label_dataset = label_dataset.sort_values(by=["image_id", "object", "attribute", "relation"], ascending=False)
     label_dataset = label_dataset.drop_duplicates(["image_id", "object", "attribute"], keep="first")
-        
+
     label_dataset["coord224"] = label_dataset["coord224"].str.replace("[", "").str.replace("]", "").str.split(",")
     label_dataset["coord224"] = label_dataset["coord224"].apply(lambda x: [int(_x) for _x in x])
     label_dataset["height"] = label_dataset.apply(lambda x: abs(x.coord224[3] - x.coord224[1]), axis=1)
@@ -157,15 +160,15 @@ def main(args):
     label_dataset["question"] = label_dataset["template"]
     label_dataset["question"] = label_dataset.apply(lambda x: x.question.replace("${object}", x.object), axis=1)
     label_dataset["question"] = label_dataset.apply(lambda x: x.question.replace("${attribute}", x.attribute), axis=1)
-    label_dataset["answer"] = np.where(label_dataset['relation'] == 0, ["no"], ["yes"])
+    label_dataset["answer"] = np.where(label_dataset["relation"] == 0, ["no"], ["yes"])
     label_dataset["content_type"] = "condition"
     label_dataset["semantic_type"] = "verify"
 
     label_dataset = label_dataset.to_dict("records")
-    
+
     # store new dataset
     args.save_path = os.path.join(args.save_dir, f"{args.split}_ref.json")
-    
+
     with open(args.save_path, "w") as f:
         json.dump(label_dataset, f, indent=4, default=str)  # use `default=str` to serialize int64
 

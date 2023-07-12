@@ -1,6 +1,7 @@
 import os
 import sys
 import json
+import pickle
 from collections import Counter, defaultdict
 from tqdm import tqdm
 import pandas as pd
@@ -94,9 +95,9 @@ def path2rest_vqa(dataset_name, path, split, annotations, label2ans):
         answers = [qa[1] for qa in qas]
         answer_labels = [a["labels"] for a in answers]
         answer_scores = [a["scores"] for a in answers]
-        question_types = [a["answer_type"] for a in answers]  # NOTE: answer_type will be used as question_type
+        content_types = [a["answer_type"] for a in answers]  # NOTE: answer_type will be used as content_typesype
         answers = [[label2ans[l] for l in al] for al in answer_labels]
-        return [binary, questions, answers, answer_labels, answer_scores, iid, qids, question_types, split]
+        return [binary, questions, answers, answer_labels, answer_scores, iid, qids, content_types, split]
 
     else:
         raise ValueError("Unknown dataset name: {}".format(dataset_name))
@@ -228,7 +229,7 @@ def make_arrow_vqa(data, dataset_name, save_dir, is_fast=True):
                 ],
             )
         elif "vqa_rad" in dataset_name or "slake" in dataset_name:
-            # [binary, questions, answers, answer_labels, answer_scores, iid, qids, question_types, split]
+            # [binary, questions, answers, answer_labels, answer_scores, iid, qids, content_types, split]
             dataframe = pd.DataFrame(
                 bs,
                 columns=[
@@ -239,7 +240,7 @@ def make_arrow_vqa(data, dataset_name, save_dir, is_fast=True):
                     "answer_scores",
                     "image_id",
                     "question_id",
-                    "question_types",
+                    "content_types",
                     "split",
                 ],
             )
@@ -252,3 +253,94 @@ def make_arrow_vqa(data, dataset_name, save_dir, is_fast=True):
         with pa.OSFile(f"{save_dir}/{dataset_name}_{split}.arrow", "wb") as sink:
             with pa.RecordBatchFileWriter(sink, table.schema) as writer:
                 writer.write_table(table)
+
+
+def path2rest_mmehr(path, split, annotations, label2ans):
+    with open(path, "rb") as fp:
+        binary = fp.read()
+
+    iid = path
+    # _annotation = annotations[split][iid]
+    _annotation = annotations[iid]
+    _annotation = list(_annotation.items())
+    qids, qas = [a[0] for a in _annotation], [a[1] for a in _annotation]
+    questions = [qa[0] for qa in qas]
+    answers = [qa[1] for qa in qas]
+    answer_labels = [a["labels"] for a in answers]
+    answer_scores = [a["scores"] for a in answers]
+    answer_types = [a["answer_type"] for a in answers]
+    semantic_types = [a["semantic_type"] for a in answers]
+    content_types = [a["content_type"] for a in answers]
+    answers = [a["answers"] for a in answers]
+
+    return [binary, questions, answers, answer_labels, answer_scores, iid, qids, answer_types, semantic_types, content_types, split]
+
+
+def make_arrow_mmehr(questions, split, dataset_name, save_dir, save=True):
+    # Record Questions
+    _annotation = defaultdict(dict)
+    for q in tqdm(questions):
+        _annotation[q["img_path"]][q["qid"]] = [q["question"]]
+
+    # Construct Vocabulary
+    # NOTE: dir is hard-coded
+    MMEHR_DATA_ROOT = "/nfs_data_storage/mmehrqg/our_dataset_2025/sampled_qa_dataset_all/csv"
+    ans2label = pickle.load(open(os.path.join(MMEHR_DATA_ROOT, "ans2idx.pkl"), "rb"))
+    label2ans = list(ans2label.keys())
+    print("Label size ({}): {}.".format(dataset_name, len(ans2label)))
+
+    # Record Answers
+    mlb = MultiLabelBinarizer()
+    mlb.fit([sorted([k for k in ans2label.keys()])])
+
+    for q in tqdm(questions):
+        answers = q["answer"]
+        labels = [mlb.transform([answers]).squeeze()]
+        scores = [1.0]
+        assert q["answer_type"].strip().lower() == "closed" or q["answer_type"].strip().lower() == "open"
+        answer_type = 0 if q["answer_type"].strip().lower() == "closed" else 1
+        content_type = q["content_type"]
+        semantic_type = q["semantic_type"]
+        _annotation[q["img_path"]][q["qid"]].append(
+            {
+                "labels": labels,
+                "scores": scores,
+                "answer_type": answer_type,
+                "content_type": content_type,
+                "semantic_type": semantic_type,
+                "answers": answers,
+            }
+        )
+
+    # Write to the files
+    annot = _annotation
+    annot_paths = [path for path in annot]
+    assert len(annot_paths) == len(annot) or len(annot_paths) == len(annot) - 1
+    print("{} set: {} images, {} questions".format(split, len(annot), len([vv for k, v in annot.items() for kk, vv in v.items()])))
+    bs = [path2rest_mmehr(path, split, _annotation, label2ans) for path in tqdm(annot_paths)]
+    dataframe = pd.DataFrame(
+        bs,
+        columns=[
+            "image",
+            "questions",
+            "answers",
+            "answer_labels",
+            "answer_scores",
+            "image_id",
+            "question_id",
+            "answer_type",
+            "semantic_type",
+            "content_type",
+            "split",
+        ],
+    )
+
+    table = pa.Table.from_pandas(dataframe)
+
+    if save:
+        os.makedirs(save_dir, exist_ok=True)
+        with pa.OSFile(f"{save_dir}/{dataset_name}_{split}.arrow", "wb") as sink:
+            with pa.RecordBatchFileWriter(sink, table.schema) as writer:
+                writer.write_table(table)
+
+    return table
