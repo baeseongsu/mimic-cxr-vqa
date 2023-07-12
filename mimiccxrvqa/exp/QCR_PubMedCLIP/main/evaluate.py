@@ -2,6 +2,7 @@ import os
 import sys
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
+import json
 import time
 import torch
 import random
@@ -86,9 +87,8 @@ def evaluate_classifier(model,pretrained_model, dataloader, cfg, n_unique_close,
             a = data['target']
             image_name = data["image_name"]
             question_text = data["question_text"]
-            answer_text = data["answer_text"]
             answer_type = data["answer_type"]
-            category_type = data["category_type"]
+            content_type = data["content_type"]
 
             if cfg.TRAIN.VISION.MAML:
                 v[0] = v[0].reshape(v[0].shape[0], 84, 84).unsqueeze(1)
@@ -150,9 +150,8 @@ def evaluate_classifier(model,pretrained_model, dataloader, cfg, n_unique_close,
                 results.append({
                     "image_name": image_name[idx],
                     "question": question_text[idx],
-                    "answer": answer_text[idx],
                     "answer_type": answer_type[idx],
-                    "category_type": category_type[idx],
+                    "content_type": content_type[idx],
                 })
                 if idx in indexs_close:
                     predictions[idx][close_logits[indexs_close.index(idx)]] = 1
@@ -183,10 +182,11 @@ def evaluate_classifier(model,pretrained_model, dataloader, cfg, n_unique_close,
     }, os.path.join(result_dir, f"{cfg.DATASET.DATASET_TYPE}{dataloader.dataset.phase}.pth"))
     results.to_csv(os.path.join(result_dir, f"{cfg.DATASET.DATASET_TYPE}{dataloader.dataset.phase}.csv"))
 
-    if cfg.DATASET.DATASET_TYPE == "ub":
+    if cfg.DATASET.DATASET_TYPE == "ref":
         pairwise_result_df = {}
-        pass
-        # eval_df = 
+        eval_df = json.load(open(os.path.join(os.path.dirname(cfg.DATASET.DATA_DIR), f"{dataloader.dataset.phase}_ref.json")))
+        eval_df = pd.DataFrame(eval_df)
+        
         obj_att_pairs = sorted(set(eval_df.groupby(["object", "attribute"]).image_id.count().index.unique()))
         closed_ans_idx = dataloader.dataset.ans2label['yes']
         total_gts = total_gts[:, closed_ans_idx]
@@ -213,7 +213,7 @@ def evaluate_classifier(model,pretrained_model, dataloader, cfg, n_unique_close,
             
         pairwise_result_df = pd.DataFrame(pairwise_result_df).T
         pd.set_option('display.max_rows', None)
-        with open(os.path.join(result_dir, f"{cfg.DATASET.DATASET_TYPE}{dataloader.dataset.phase}_log.txt"), 'a') as f:
+        with open(os.path.join(result_dir, f"{cfg.DATASET.DATASET_TYPE}{dataloader.dataset.phase}_ref_log.txt"), 'a') as f:
             datetime_string = get_time_stamp()
             f.write("-" * 100 + "\n")
             f.write('%s : logging start' % (datetime_string) + "\n")
@@ -237,10 +237,10 @@ def evaluate_classifier(model,pretrained_model, dataloader, cfg, n_unique_close,
             f.write(f"micro_f1_score_best_epoch  | " + "{:.4f}".format(micro_f1) + "\n")
             f.write(f"macro_f1_score_best_epoch  | " + "{:.4f}".format(macro_f1) + "\n\n")
 
-            cat_result_df = {_cat: {} for _cat in results.category_type.unique()}
-            for _cat in sorted(results.category_type.unique()):
-                _y_true = total_gts[(results.category_type == _cat)]
-                _y_pred = total_preds[(results.category_type == _cat)]
+            cat_result_df = {_cat: {} for _cat in results.content_type.unique()}
+            for _cat in sorted(results.content_type.unique()):
+                _y_true = total_gts[(results.content_type == _cat)]
+                _y_pred = total_preds[(results.content_type == _cat)]
                 try:
                     acc = accuracy_score(_y_true, _y_pred >= 0.5)
                     f1 = f1_score(np.array(_y_true), np.array(_y_pred) >= 0.5, average="micro")
@@ -284,6 +284,7 @@ if __name__ == '__main__':
     args.device = device
     update_config(cfg, args)
     data_dir = cfg.DATASET.DATA_DIR
+    img_root = cfg.DATASET.IMG_DIR
     args.data_dir = data_dir
 
     # Fixed random seed
@@ -305,8 +306,8 @@ if __name__ == '__main__':
     del pretrained_model
     
     # create VQA model and question classify model
-    val_dataset = VQAMIMICCXRFeatureDataset('valid', cfg, d, dataroot=data_dir)
-    test_dataset = VQAMIMICCXRFeatureDataset('test', cfg, d, dataroot=data_dir)
+    val_dataset = VQAMIMICCXRFeatureDataset('valid', cfg, d, dataroot=data_dir, imgroot=img_root)
+    test_dataset = VQAMIMICCXRFeatureDataset('test', cfg, d, dataroot=data_dir, imgroot=img_root)
     
     drop_last = False
     drop_last_val = False 

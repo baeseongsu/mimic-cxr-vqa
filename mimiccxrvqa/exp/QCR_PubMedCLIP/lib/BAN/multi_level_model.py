@@ -83,17 +83,19 @@ class BiResNet(nn.Module):
         return q_emb.sum(1)
 
 
-def seperate(v,q,a,att, answer_target, n_unique_close):     #q: b x 12 x 1024  v:  b x 1 x 128 answer_target : 1 x b
+def seperate(v, q, a, att, answer_target, n_unique_close):     #q: b x 12 x 1024  v:  b x 1 x 128 answer_target : 1 x b
     indexs_open = []
     indexs_close = []
-
     for i in range(len(answer_target)):
         if answer_target[i]==0:
             indexs_close.append(i)
         else:
             indexs_open.append(i)
-        if len(q.shape) == 2:  # in case of using clip to encode q
-            q = q.unsqueeze(1)
+
+    if len(q.shape) == 2:  # in case of using clip to encode q
+        q = q.unsqueeze(1)
+    if len(att.shape) == 1:
+        att = att.unsqueeze(0)
     
     v = v.clone()
     q = q.clone()
@@ -193,7 +195,7 @@ class BAN_Model(nn.Module):
         q_emb = self.q_emb.forward_all(w_emb) # [batch, q_len, q_dim]
 
         # get open & close feature
-        v_open, v_close, q_open, q_close,a_open, a_close, typeatt_open, typeatt_close, _, _ = seperate(v_emb,q_emb,a,type_att, answer_target, self.dataset.num_close_candidates)
+        v_open, v_close, q_open, q_close,a_open, a_close, typeatt_open, typeatt_close, _, _ = seperate(v_emb, q_emb, a, type_att, answer_target, self.dataset.num_close_candidates)
 
         # diverse Attention -> (open + close)
         att_close, _ = self.close_att(v_close, q_close)
@@ -247,8 +249,11 @@ class BAN_Model(nn.Module):
         q_emb = self.q_emb.forward_all(w_emb) # [batch, q_len, q_dim]
         # get open & close feature
         answer_target = classify(q)
-        _,predicted=torch.max(answer_target,1)
-        v_open, v_close, q_open, q_close, a_open, a_close, typeatt_open, typeatt_close, indexs_open, indexs_close = seperate(v_emb,q_emb,a,type_att, predicted, self.dataset.num_close_candidates)
+        if len(answer_target.shape) == 1:
+            answer_target = answer_target.unsqueeze(0)
+        _, predicted = torch.max(answer_target,1)
+
+        v_open, v_close, q_open, q_close, a_open, a_close, typeatt_open, typeatt_close, indexs_open, indexs_close = seperate(v_emb, q_emb, a, type_att, predicted, self.dataset.num_close_candidates)
 
         # diverse Attention -> (open + close)
         att_close, _ = self.close_att(v_close,q_close)

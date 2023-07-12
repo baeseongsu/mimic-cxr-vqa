@@ -16,6 +16,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
+from tqdm import tqdm
 from torch.utils.data import DataLoader
 from datetime import datetime
 from lib.dataset import *
@@ -51,7 +52,7 @@ def evaluate(model, dataloader,logger,device):
     number =0
     model.eval()
     with torch.no_grad():
-        for i, row in enumerate(dataloader):
+        for i, row in tqdm(enumerate(dataloader)):
             image_data = row['image']
             question = row['question_logit']
             answer_target = row['answer_target']
@@ -72,6 +73,7 @@ if __name__=='__main__':
     args = parse_args()
     update_config(cfg, args)
     dataroot = cfg.DATASET.DATA_DIR 
+    imgroot = cfg.DATASET.IMG_DIR
     
     # set GPU device
     device = torch.device("cuda:" + str(args.gpu) if args.gpu >= 0 else "cpu")
@@ -83,11 +85,11 @@ if __name__=='__main__':
     torch.backends.cudnn.deterministic = True
 
     d = Dictionary.load_from_file(os.path.join(dataroot, 'dictionary.pkl'))
-    train_dataset = VQAMIMICCXRFeatureDataset('train', cfg, d, dataroot=dataroot)
+    train_dataset = VQAMIMICCXRFeatureDataset('train', cfg, d, dataroot=dataroot, imgroot=imgroot)
     train_data = DataLoader(train_dataset, batch_size=32, shuffle=True, num_workers=2, pin_memory=True, drop_last=False)
 
-    val_dataset = VQAMIMICCXRFeatureDataset('valid', cfg, d, dataroot=dataroot)
-    val_data = DataLoader(val_dataset, batch_size=32, shuffle=False, num_workers=2, pin_memory=True, drop_last=False)
+    val_dataset = VQAMIMICCXRFeatureDataset('valid', cfg, d, dataroot=dataroot, imgroot=imgroot)
+    val_data = DataLoader(val_dataset, batch_size=32, shuffle=False, num_workers=2, pin_memory=True, drop_last=True)
 
     net = classify_model(d.ntoken, os.path.join(dataroot, 'glove6b_init_300d.npy'))
     net =net.to(device)
@@ -110,7 +112,7 @@ if __name__=='__main__':
     epochs = 10
     best_eval_score = 0
     best_epoch = 0
-    for epoch in range(epochs):
+    for epoch in tqdm(range(epochs)):
         net.train()
         acc = 0.
         number_dataset = 0
@@ -132,6 +134,7 @@ if __name__=='__main__':
         
         total_loss /= len(train_data)
         acc = acc/ number_dataset * 100.
+        utils.save_model(model_path, net, epoch, 0)
 
         logger.info('-------[Epoch]:{}-------'.format(epoch))
         logger.info('[Train] Loss:{:.6f} , Train_Acc:{:.6f}%'.format(total_loss, acc))

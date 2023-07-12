@@ -123,10 +123,10 @@ def compute_vqa(pl_module, batch, test=False):
     vqa_iid = torch.tensor(batch["iid"]).to(pl_module.device)
     vqa_qid = torch.tensor(batch["qid"]).to(pl_module.device)
     vqa_answer_types = torch.tensor(batch["answer_types"]).to(pl_module.device)
-    if "question_types" in batch:
-        vqa_question_types = batch["question_types"]
+    if "content_types" in batch:
+        vqa_content_types = batch["content_types"]
     else:
-        vqa_question_types = None
+        vqa_content_types = None
     
     if pl_module._hparams["config"]['datasets'][0] == "vqa_mmehr":
         # multi-label
@@ -146,7 +146,7 @@ def compute_vqa(pl_module, batch, test=False):
         "vqa_labels": vqa_labels,
         "vqa_scores": vqa_scores,
         "vqa_answer_types": vqa_answer_types,
-        "vqa_question_types": vqa_question_types,
+        "vqa_content_types": vqa_content_types,
     }
 
     if test:
@@ -156,13 +156,13 @@ def compute_vqa(pl_module, batch, test=False):
 
     loss = getattr(pl_module, f"{phase}_vqa_loss")(ret["vqa_loss"])
 
-    if vqa_question_types == None:
+    if vqa_content_types == None:
         score = getattr(pl_module, f"{phase}_vqa_score")(ret["vqa_logits"], ret["vqa_targets"], ret["vqa_answer_types"])
         pl_module.log(f"vqa/{phase}/loss", loss)
         pl_module.log(f"vqa/{phase}/score", score)
     else:
         # only for mmehr dataset 
-        score = getattr(pl_module, f"{phase}_vqa_score")(ret["vqa_logits"], ret["vqa_targets"], ret["vqa_question_types"], vqa_iid, vqa_qid)
+        score = getattr(pl_module, f"{phase}_vqa_score")(ret["vqa_logits"], ret["vqa_targets"], ret["vqa_content_types"], vqa_iid, vqa_qid)
         pl_module.log(f"vqa/{phase}/loss", loss)
         pl_module.log(f"vqa/{phase}/score", score)
 

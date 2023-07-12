@@ -50,6 +50,7 @@ if __name__ == '__main__':
     args.device = device
     update_config(cfg, args)
     data_dir = cfg.DATASET.DATA_DIR
+    imgroot = cfg.DATASET.IMG_DIR
     args.data_dir = data_dir
 
     # Fixed random seed
@@ -83,8 +84,8 @@ if __name__ == '__main__':
     # training phase
     # create VQA model and question classify model
     if args.test:
-        val_dataset = VQAMIMICCXRFeatureDataset('valid', cfg, d, dataroot=data_dir)
-        test_dataset = VQAMIMICCXRFeatureDataset('test', cfg, d, dataroot=data_dir)
+        val_dataset = VQAMIMICCXRFeatureDataset('valid', cfg, d, dataroot=data_dir, imgroot=imgroot)
+        test_dataset = VQAMIMICCXRFeatureDataset('test', cfg, d, dataroot=data_dir, imgroot=imgroot)
 
         drop_last = False
         drop_last_val = False 
@@ -96,8 +97,8 @@ if __name__ == '__main__':
         test(cfg, model, question_classify, val_loader, val_dataset.num_close_candidates, args.device, "valid")
         test(cfg, model, question_classify, test_loader, val_dataset.num_close_candidates, args.device, "test")
     else:
-        train_dataset = VQAMIMICCXRFeatureDataset('train', cfg, d, dataroot=data_dir)
-        val_dataset = VQAMIMICCXRFeatureDataset('valid', cfg, d, dataroot=data_dir)
+        train_dataset = VQAMIMICCXRFeatureDataset('train', cfg, d, dataroot=data_dir, imgroot=imgroot)
+        val_dataset = VQAMIMICCXRFeatureDataset('valid', cfg, d, dataroot=data_dir, imgroot=imgroot)
 
         drop_last = False
         drop_last_val = False 

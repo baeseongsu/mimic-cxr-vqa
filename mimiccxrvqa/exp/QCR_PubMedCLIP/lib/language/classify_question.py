@@ -64,7 +64,7 @@ class QuestionAttention(nn.Module):
         concated = torch.cat([context, question], -1)  # b * 12 * 300 + 1024 / or 512 if clip
         concated = torch.mul(torch.tanh(self.tanh_gate(concated)), torch.sigmoid(self.sigmoid_gate(concated)))  #b*12*1024 / or b*77*512 if clip
         a = self.attn(concated) # #b*12*1  / or b*77*1 if clip
-        attn = F.softmax(a.squeeze(), 1) #b*12 / or b*77 if clip
+        attn = F.softmax(a.squeeze(dim=-1), 1) #b*12 / or b*77 if clip
 
         ques_attn = torch.bmm(attn.unsqueeze(1), question).squeeze() #b*1024 / or b*512 if clip
 

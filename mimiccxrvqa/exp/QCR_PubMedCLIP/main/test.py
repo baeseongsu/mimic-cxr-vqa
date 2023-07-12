@@ -63,8 +63,8 @@ def evaluate_classifier(model,pretrained_model, dataloader, cfg, n_unique_close,
     score_close = 0.
     model.eval()
     
-    correct_results = {"image_name": [], "question": [], "answer": [], "answer_type": [], "predicted_answer_type": [], "category_type": []}
-    incorrect_results = {"image_name": [], "question": [], "answer": [], "answer_type": [], "predicted_answer": [], "predicted_answer_type": [], "category_type": []}
+    correct_results = {"image_name": [], "question": [], "answer": [], "answer_type": [], "predicted_answer_type": [], "content_type": []}
+    incorrect_results = {"image_name": [], "question": [], "answer": [], "answer_type": [], "predicted_answer": [], "predicted_answer_type": [], "content_type": []}
 
     with torch.no_grad():
     # (v, q, a,answer_type, question_type, phrase_type, answer_target, image_name, question_text, answer_text)
@@ -74,9 +74,8 @@ def evaluate_classifier(model,pretrained_model, dataloader, cfg, n_unique_close,
             a = data['target']
             image_name = data["image_name"]
             question_text = data["question_text"]
-            answer_text = data["answer_text"]
             answer_type = data["answer_type"]
-            category_type = data["category_type"]
+            content_type = data["content_type"]
 
             if cfg.TRAIN.VISION.MAML:
                 v[0] = v[0].reshape(v[0].shape[0], 84, 84).unsqueeze(1)
@@ -142,35 +141,31 @@ def evaluate_classifier(model,pretrained_model, dataloader, cfg, n_unique_close,
                     ind = indexs_close[i]
                     correct_results["image_name"].append(image_name[ind])
                     correct_results["question"].append(question_text[ind])
-                    correct_results["answer"].append(answer_text[ind])
                     correct_results["predicted_answer_type"].append("CLOSED")
                     correct_results["answer_type"].append(answer_type[ind])
-                    correct_results["category_type"].append(category_type[ind])
+                    correct_results["content_type"].append(content_type[ind])
                 for ind in close_incorrect:
                     incorrect_results["image_name"].append(image_name[ind])
                     incorrect_results["question"].append(question_text[ind])
-                    incorrect_results["answer"].append(answer_text[ind])
                     incorrect_results["predicted_answer"].append(close_logits[ind].cpu())
                     incorrect_results["predicted_answer_type"].append("CLOSED")
                     incorrect_results["answer_type"].append(answer_type[ind])
-                    incorrect_results["category_type"].append(category_type[ind])
+                    incorrect_results["content_type"].append(content_type[ind])
             if open_correct is not None:
                 for i in open_correct:
                     ind = indexs_open[i]
                     correct_results["image_name"].append(image_name[ind])
                     correct_results["question"].append(question_text[ind])
-                    correct_results["answer"].append(answer_text[ind])
                     correct_results["predicted_answer_type"].append("OPEN")
                     correct_results["answer_type"].append(answer_type[ind])
-                    correct_results["category_type"].append(category_type[ind])
+                    correct_results["content_type"].append(content_type[ind])
                 for ind in open_incorrect:
                     incorrect_results["image_name"].append(image_name[ind])
                     incorrect_results["question"].append(question_text[ind])
-                    incorrect_results["answer"].append(answer_text[ind])
                     incorrect_results["predicted_answer"].append(open_logits[ind].cpu())
                     incorrect_results["predicted_answer_type"].append("OPEN")
                     incorrect_results["answer_type"].append(answer_type[ind])
-                    incorrect_results["category_type"].append(category_type[ind])
+                    incorrect_results["content_type"].append(content_type[ind])
 
     try:
         score = 100* score / total

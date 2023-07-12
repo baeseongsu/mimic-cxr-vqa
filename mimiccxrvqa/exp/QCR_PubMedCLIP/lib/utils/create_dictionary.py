@@ -110,9 +110,9 @@ def create_glove_embedding_init(idx2word, glove_file):
 
 
 if __name__ == "__main__":
-
     parser = argparse.ArgumentParser(description="Med VQA")
     parser.add_argument("--input_path", type=str, help="Path to input data")
+    parser.add_argument("--output_path", type=str, help="Path to output data")
     parser.add_argument("--glove_path", type=str, default="../language", help="Path to glove embedding")
 
     parser.add_argument("--trainfile", type=str, help="Name of the train file", default="train.json")
@@ -123,10 +123,10 @@ if __name__ == "__main__":
     train_file = args.trainfile
     valid_file = args.validfile
     d = create_dictionary(data, train_file, valid_file)
-    os.makedirs(os.path.join(data, "preprocess_pubmedclip"), exist_ok=True)
-    d.dump_to_file(os.path.join(data, "preprocess_pubmedclip/dictionary.pkl"))
+    os.makedirs(args.output_path, exist_ok=True)
+    d.dump_to_file(os.path.join(args.output_path, "dictionary.pkl"))
 
-    d = Dictionary.load_from_file(os.path.join(data, "preprocess_pubmedclip/dictionary.pkl"))
+    d = Dictionary.load_from_file(os.path.join(args.output_path, "dictionary.pkl"))
     emb_dim = 300
     glove_file = os.path.join(args.glove_path, "glove.6B.%dd.txt" % emb_dim)
     weights, word2emb = create_glove_embedding_init(d.idx2word, glove_file)

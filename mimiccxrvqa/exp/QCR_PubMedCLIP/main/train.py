@@ -14,7 +14,7 @@ import torch.nn as nn
 
 # from torch.utils.tensorboard import SummaryWriter
 from lib.utils import utils
-
+from tqdm import tqdm
 
 def compute_score_with_logits(logits, labels):
     if labels.shape[0] == 0:     # sometimes, all samples in the batch are either open or close
@@ -103,7 +103,7 @@ def train(cfg, model, question_model, train_loader, eval_loader, n_unique_close,
         model.train()
         
         # Predicting and computing score
-        for i, data in enumerate(train_loader):
+        for i, data in tqdm(enumerate(train_loader), total=len(train_loader)):
             v = data['image']
             q = data['question_logit']
             a = data['target']

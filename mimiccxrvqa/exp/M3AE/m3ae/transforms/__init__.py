@@ -2,14 +2,16 @@ from .transform import (
     clip_transform,
     clip_transform_randaug,
     clip_transform_resizedcrop,
-    mmehr_transform
+    mmehr_transform,
+    mmehr_transform_aug
 )
 
 _transforms = {
     "clip": clip_transform,
     "clip_randaug": clip_transform_randaug,
     "clip_resizedcrop": clip_transform_resizedcrop,
-    "mmehr": mmehr_transform
+    "mmehr": mmehr_transform,
+    "mmehr_aug": mmehr_transform_aug,
 }
 
 
