@@ -136,7 +136,7 @@ def main(args):
     # define file path
     if args.vqa_dataset == "vqa-mimic":
         if args.exp_type in ["all", "ub"]:
-            args.src_file = "../../../dataset"
+            args.src_file = "../../dataset"
         else:
             raise ValueError()
 
@@ -671,7 +671,11 @@ def evaluate_vqa_model(args, model, eval_dataloader, return_preds=False):
             acc = accuracy_score(total_vqa_labels, total_vqa_logits >= 0.5)
             micro_f1 = f1_score(total_vqa_labels, total_vqa_logits >= 0.5, average='micro')
             macro_f1 = f1_score(total_vqa_labels, total_vqa_logits >= 0.5, average='weighted')
-            eval_df = pd.read_csv(os.path.join(eval_dataloader.dataset.file_src, f"{eval_dataloader.dataset.split}_qa_dataset_all.csv"), dtype=str)
+            
+            file_path = os.path.join(eval_dataloader.dataset.file_src, f"{eval_dataloader.dataset.split}.json")
+            eval_df = pd.DataFrame(json.load(open(file_path)), dtype=str)
+            # eval_df = pd.read_csv(os.path.join(eval_dataloader.dataset.file_src, f"{eval_dataloader.dataset.split}_qa_dataset_all.csv"), dtype=str)
+            
             with open(os.path.join(args.eval_output_dir, f"{args.exp_type}_{eval_dataloader.dataset.split}_log.txt"), 'a') as f:
                 import datetime
                 datetime_string = datetime.datetime.now().strftime("%d-%m-%y %H:%M:%S")
@@ -683,10 +687,10 @@ def evaluate_vqa_model(args, model, eval_dataloader, return_preds=False):
                 f.write(f"micro_f1_score_best_epoch  | " + "{:.4f}".format(micro_f1) + "\n")
                 f.write(f"macro_f1_score_best_epoch  | " + "{:.4f}".format(macro_f1) + "\n\n")
 
-                result_df = {_cat: {} for _cat in eval_df.category_type.unique()}
-                for _cat in sorted(eval_df.category_type.unique()):
-                    _y_true = total_vqa_labels[(eval_df.category_type == _cat)]
-                    _y_pred = total_vqa_logits[(eval_df.category_type == _cat)]
+                result_df = {_cat: {} for _cat in eval_df.content_type.unique()}
+                for _cat in sorted(eval_df.content_type.unique()):
+                    _y_true = total_vqa_labels[(eval_df.content_type == _cat)]
+                    _y_pred = total_vqa_logits[(eval_df.content_type == _cat)]
                     try:
                         acc = accuracy_score(_y_true, _y_pred >= 0.5)
                         f1 = f1_score(np.array(_y_true), np.array(_y_pred) >= 0.5, average="micro")
@@ -784,7 +788,7 @@ if __name__ == "__main__":
     parser.add_argument("--always_truncate_tail", action="store_true", help="Truncate_config: Whether we should always truncate tail.")
 
     # dataset
-    parser.add_argument("--vqa_dataset", default="vqa-rad", type=str, choices=["vqa-rad", "slake", "vqa-mimic"])
+    parser.add_argument("--vqa_dataset", default="vqa-mimic", type=str, choices=["vqa-rad", "slake", "vqa-mimic"])
     # dataset (vqa-mimic)
     parser.add_argument("--exp_type", default="all", type=str, choices=["all", "ub"])
     # dataset (vqa-rad)
@@ -819,7 +823,7 @@ if __name__ == "__main__":
     parser.add_argument("--wandb_entity_name", type=str, default="ehr-vqg")
     parser.add_argument("--wandb_project_name", type=str, default="MIMIV-VQA-MedViLL")
     parser.add_argument("--exp_name", type=str, default="")
-    parser.add_argument("--image_root", type=str, default="../../data/mimic/re_512_3ch/Train")
+    # parser.add_argument("--image_root", type=str, default="../../data/mimic/re_512_3ch/Train")
     parser.add_argument(
         "--output_dir", default="./saved_results/vqa_finetune", type=str, help="The output directory where the model predictions and checkpoints will be written."
     )
