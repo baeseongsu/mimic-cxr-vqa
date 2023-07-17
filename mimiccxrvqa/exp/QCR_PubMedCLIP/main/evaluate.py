@@ -56,8 +56,8 @@ def test(cfg, model, question_model, eval_loader, n_unique_close, device, phase=
     utils.create_dir(os.path.join(cfg.TEST.RESULT_DIR, phase))
 
     # Evaluation
-    eval_score, open_score, close_score = evaluate_classifier(model,question_model, eval_loader, cfg, n_unique_close, device, 
-                                                              os.path.join(cfg.TEST.RESULT_DIR, phase))
+    evaluate_classifier(model,question_model, eval_loader, cfg, n_unique_close, device, 
+                        os.path.join(cfg.TEST.RESULT_DIR, phase))
 
         
 # Evaluation
@@ -119,17 +119,11 @@ def evaluate_classifier(model,pretrained_model, dataloader, cfg, n_unique_close,
             batch_open_score = 0.
             if preds_close.shape[0] != 0:
                 batch_close_score_temp, close_logits = compute_score_with_logits(preds_close, a_close.data)
-                close_correct = (batch_close_score_temp == 1).nonzero(as_tuple=True)[0].tolist()
                 batch_close_score = batch_close_score_temp.sum()
-            else:
-                close_correct = None
 
             if preds_open.shape[0] != 0: 
                 batch_open_score_temp, open_logits = compute_score_with_logits_multilabel(preds_open, a_open.data, return_logit=True)
-                open_correct = (batch_open_score_temp == 1).nonzero(as_tuple=True)[0].tolist()
                 batch_open_score = batch_open_score_temp.sum()
-            else:
-                open_correct = None
 
             score += batch_close_score + batch_open_score
 

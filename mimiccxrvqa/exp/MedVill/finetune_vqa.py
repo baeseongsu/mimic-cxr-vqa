@@ -133,17 +133,6 @@ def main(args):
     # set max sequence length
     args.max_seq_length = args.max_len_b + args.len_vis_input + 3  # +3 for 2x[SEP] and [CLS]
 
-    # define file path
-    if args.vqa_dataset == "vqa-mimic":
-        if args.exp_type in ["all", "ub"]:
-            args.src_file = "../../dataset"
-        else:
-            raise ValueError()
-
-        args.img_path = "../../../physionet.org/files/mimic-cxr-jpg/2.0.0/re512_3ch_contour_cropped"
-    else:
-        raise ValueError()
-
     print(" # PID :", os.getpid())
     os.makedirs(args.output_dir, exist_ok=True)
     json.dump(args.__dict__, open(os.path.join(args.output_dir, "opt.json"), "w"), sort_keys=True, indent=2)
@@ -172,7 +161,6 @@ def main(args):
     set_seed(seed=args.seed)
 
     if args.wandb and is_main_process():
-        # wandb.init(config=args, project="report_gen", entity="mimic-cxr", name=args.exp_name, reinit=True)
         wandb.init(
             config=args,
             entity=args.wandb_entity_name,
@@ -226,17 +214,13 @@ def main(args):
         t_total = int(len(train_dataloader) * args.num_train_epochs * 1.0 / args.gradient_accumulation_steps)
 
     """ eval dataset """
-    if args.vqa_dataset == "vqa-rad":
-        _split_for_valid = "test"
-    elif args.vqa_dataset == "slake":
-        _split_for_valid = "validate"
-    elif args.vqa_dataset == "vqa-mimic":
+    if args.vqa_dataset == "vqa-mimic":
         _split_for_valid = "valid"
 
     eval_dataset = DATASET_CLASS_MAPPING[args.vqa_dataset](
         args=args,
         split=_split_for_valid,
-        file_src=args.src_file,  # "/home/data_storage/mimic-cxranswer_path = os.path.join(file_src, "cache", f"{self.split}_target.pkl")/dataset/data_RAD"
+        file_src=args.src_file, 
         img_root=args.img_path,
         batch_size=args.train_batch_size,
         tokenizer=tokenizer,
@@ -258,7 +242,7 @@ def main(args):
     test_dataset = DATASET_CLASS_MAPPING[args.vqa_dataset](
         args=args,
         split="test",
-        file_src=args.src_file,  # "/home/data_storage/mimic-cxr/dataset/data_RAD"
+        file_src=args.src_file,  
         img_root=args.img_path,
         batch_size=args.train_batch_size,
         tokenizer=tokenizer,
@@ -277,26 +261,18 @@ def main(args):
 
     # prepare model
     recover_step = _get_max_epoch_model(args.output_dir)
-    if args.vqa_dataset == "vqa-rad":
-        cls_num_labels = 458
-    elif args.vqa_dataset == "slake":
-        cls_num_labels = 257
-    elif args.vqa_dataset == "vqa-mimic":
+    if args.vqa_dataset == "vqa-mimic":
         cls_num_labels = 110
     else:
         raise ValueError()
 
     type_vocab_size = 2
     relax_projection = 4 if args.relax_projection else 0
-    # task_idx_proj = 3 if args.tasks == "report_generation" else 0
     task_idx_proj = 0
 
     # BERT model will be loaded! from scratch
     if args.model_recover_path is None:
         MODEL_CLASS = MedViLLForVQA
-        # from transformers import AutoConfig, BertConfig
-        # config = AutoConfig.from_pretrained("bert-base-uncased")
-        # config = BertConfig.from_pretrained("bert-base-uncased")
         from pytorch_pretrained_bert.model import BertConfig
 
         config = BertConfig(vocab_size_or_config_json_file=30522)
@@ -308,20 +284,15 @@ def main(args):
         MODEL_CLASS = MedViLLForVQA
         model = MODEL_CLASS.from_pretrained(
             pretrained_model_name="bert-base-uncased",
-            # state_dict=model_recover,
             args=args,
             num_labels=cls_num_labels,  # cls_num_labels
             type_vocab_size=type_vocab_size,
             relax_projection=relax_projection,
-            # config_path=args.config_path,
             task_idx=task_idx_proj,
             max_position_embeddings=args.max_position_embeddings,
             label_smoothing=args.label_smoothing,
             fp32_embedding=args.fp32_embedding,
-            # cache_dir=args.output_dir+'/.pretrained_model_{}'.format(args.global_rank),
-            drop_prob=args.drop_prob,
-            # len_vis_input=args.len_vis_input,
-            # tasks=args.tasks,
+            drop_prob=args.drop_prob
         )
         print("scratch training")
         torch.cuda.empty_cache()
@@ -397,30 +368,6 @@ def main(args):
     args.eval_output_dir = os.path.join(os.path.dirname(args.output_dir), "eval_outputs")
     os.makedirs(args.eval_output_dir, exist_ok=True)
     if args.vqa_eval:
-
-        # total_acc, closed_acc, open_acc = vqa_eval(args, device, logger, bi_uni_pipeline, tokenizer, model, results_dict)
-
-        # # TODO: temporary
-        # train_vqa_acc, train_closed_acc, train_open_acc, train_vqa_labels, train_vqa_logits = evaluate_vqa_model(
-        #     args=args,
-        #     model=model,
-        #     eval_dataloader=train_dataloader,
-        #     return_preds=True,
-        # )
-        # train_metrics = {
-        #     "train/acc (total)": train_vqa_acc,
-        #     "train/acc (closed)": train_closed_acc,
-        #     "train/acc (open)": train_open_acc,
-        # }
-        # print(train_metrics)
-        # num_epochs_of_recovered_model = os.path.basename(args.model_recover_path).split(".")[1]
-        # train_eval_output_fpath = os.path.join(eval_output_dir, f"{num_epochs_of_recovered_model}_result_train.bin")
-        # train_eval_output = {
-        #     "train_vqa_labels": train_vqa_labels,
-        #     "train_vqa_logits": train_vqa_logits,
-        #     **train_metrics,
-        # }
-        # torch.save(train_eval_output, train_eval_output_fpath)
         print("Start evaluation")
         args.eval_output_dir = os.path.join(os.path.dirname(args.output_dir), "eval_outputs")
         os.makedirs(args.eval_output_dir, exist_ok=True)
@@ -542,19 +489,6 @@ def main(args):
                         optimizer.zero_grad()
                         global_step += 1
 
-                    # if global_step % 500 == 0 and args.vqa_dataset == "vqa-mimic":
-                    #     # evaulation (stepwise)
-                    #     eval_vqa_acc, eval_closed_acc, eval_open_acc = evaluate_vqa_model(args=args, model=model, eval_dataloader=eval_dataloader)
-                    #     eval_metrics = {
-                    #         "eval/acc (total)": eval_vqa_acc,
-                    #         "eval/acc (closed)": eval_closed_acc,
-                    #         "eval/acc (open)": eval_open_acc,
-                    #     }
-                    #     print(eval_metrics)
-
-                    #     if args.wandb and is_main_process():
-                    #         wandb.log(eval_metrics, step=global_step)
-
                 # accuracy (epoch)
                 train_epoch_vqa_acc = sum(total_vqa_score) / len(total_vqa_score)
                 if len(total_closed_score) > 0:
@@ -583,7 +517,6 @@ def main(args):
                     f.write(model_to_save.config.to_json_string())
 
                 output_model_file = os.path.join(args.output_dir, "model.{0}.bin".format(i_epoch))
-                # output_optim_file = os.path.join(args.output_dir, "optim.{0}.bin".format(i_epoch))
                 if args.global_rank in (-1, 0):  # save model if the first device or no dist
                     torch.save(copy.deepcopy(model_to_save).cpu().state_dict(), output_model_file)
 
@@ -622,10 +555,6 @@ def evaluate_vqa_model(args, model, eval_dataloader, return_preds=False):
 
     with torch.no_grad():
         for step, batch in enumerate(tqdm(eval_dataloader)):
-
-            # if step > 1000:
-            #     break
-
             # prepare inputs
             batch = [t.to(args.device) for t in batch]
             input_ids, segment_ids, attention_mask, img, vis_pe, ans_labels, ans_type, _organ = batch
@@ -646,7 +575,6 @@ def evaluate_vqa_model(args, model, eval_dataloader, return_preds=False):
                 ans_type=ans_type,
             )
             vqa_loss, vqa_score, vqa_logits, closed_score, open_score = loss_tuple
-            # print(closed_score, open_score)
 
             loss = vqa_loss.mean()
             test_loss.append(loss.item())
@@ -674,7 +602,6 @@ def evaluate_vqa_model(args, model, eval_dataloader, return_preds=False):
             
             file_path = os.path.join(eval_dataloader.dataset.file_src, f"{eval_dataloader.dataset.split}.json")
             eval_df = pd.DataFrame(json.load(open(file_path)), dtype=str)
-            # eval_df = pd.read_csv(os.path.join(eval_dataloader.dataset.file_src, f"{eval_dataloader.dataset.split}_qa_dataset_all.csv"), dtype=str)
             
             with open(os.path.join(args.eval_output_dir, f"{args.exp_type}_{eval_dataloader.dataset.split}_log.txt"), 'a') as f:
                 import datetime
@@ -703,11 +630,11 @@ def evaluate_vqa_model(args, model, eval_dataloader, return_preds=False):
                 f.write(f"category-wise acc" + "\n")
                 f.write(str(result_df) + "\n")
 
-        elif args.exp_type == "ub":
+        elif args.exp_type == "ref":
             result_df = {}
-            pass
-            # ToDo
-            # eval_df = 
+            eval_df = json.load(open(os.path.join(eval_dataloader.dataset.file_src, f"{eval_dataloader.dataset.split}_ref.json")))
+            eval_df = pd.DataFrame(eval_df)
+
             obj_att_pairs = sorted(set(eval_df.groupby(["object", "attribute"]).image_id.count().index.unique()))
             closed_ans_idx = pickle.load(open(os.path.join(eval_dataloader.dataset.file_src, "ans2idx.pkl"), "rb"))['yes']
             total_vqa_labels = total_vqa_labels[:, closed_ans_idx]
@@ -734,7 +661,7 @@ def evaluate_vqa_model(args, model, eval_dataloader, return_preds=False):
                 
             result_df = pd.DataFrame(result_df).T
             pd.set_option('display.max_rows', None)
-            with open(os.path.join(args.eval_output_dir, f"{args.exp_type}_{eval_dataloader.dataset.split}_log.txt"), 'a') as f:
+            with open(os.path.join(args.eval_output_dir, f"{args.exp_type}_{eval_dataloader.dataset.split}_ref_log.txt"), 'a') as f:
                 import datetime
                 datetime_string = datetime.datetime.now().strftime("%d-%m-%y %H:%M:%S")
                 f.write("-" * 100 + "\n")
@@ -788,11 +715,9 @@ if __name__ == "__main__":
     parser.add_argument("--always_truncate_tail", action="store_true", help="Truncate_config: Whether we should always truncate tail.")
 
     # dataset
-    parser.add_argument("--vqa_dataset", default="vqa-mimic", type=str, choices=["vqa-rad", "slake", "vqa-mimic"])
+    parser.add_argument("--vqa_dataset", default="vqa-mimic", type=str, choices=["vqa-mimic"])
     # dataset (vqa-mimic)
-    parser.add_argument("--exp_type", default="all", type=str, choices=["all", "ub"])
-    # dataset (vqa-rad)
-    parser.add_argument("--vqa_rad", default="all", type=str, choices=["all", "chest", "head", "abd"])
+    parser.add_argument("--exp_type", default="all", type=str, choices=["all", "ref"])
 
     # training
     parser.add_argument("--do_train", action="store_true", default=True, help="Whether to run training. This should ALWAYS be set to True.")
@@ -823,7 +748,8 @@ if __name__ == "__main__":
     parser.add_argument("--wandb_entity_name", type=str, default="ehr-vqg")
     parser.add_argument("--wandb_project_name", type=str, default="MIMIV-VQA-MedViLL")
     parser.add_argument("--exp_name", type=str, default="")
-    # parser.add_argument("--image_root", type=str, default="../../data/mimic/re_512_3ch/Train")
+    parser.add_argument("--src_file", type=str, default="../../dataset")
+    parser.add_argument("--img_path", type=str, default="../../../physionet.org/files/mimic-cxr-jpg/2.0.0/re512_3ch_contour_cropped")
     parser.add_argument(
         "--output_dir", default="./saved_results/vqa_finetune", type=str, help="The output directory where the model predictions and checkpoints will be written."
     )

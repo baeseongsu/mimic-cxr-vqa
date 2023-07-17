@@ -128,11 +128,6 @@ def evaluate_classifier(model,pretrained_model, dataloader, cfg, n_unique_close,
 
             closed_ended += preds_close.shape[0]
             score_close += batch_close_score
-
-            # assert len(indexs_close) + len(indexs_open) == len(image_name)
-            # assert len(close_correct) + len(open_correct) <= len(image_name)  # batch size
-            # preds_close_list.append(preds_close)
-            # preds_open_list.append(preds_open)
             
             close_incorrect = [i for i in range(len(indexs_close)) if i not in close_correct]
             open_incorrect = [i for i in range(len(indexs_open)) if i not in open_correct]

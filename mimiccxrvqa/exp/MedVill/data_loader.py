@@ -220,8 +220,9 @@ class VQAMIMICDataset(torch.utils.data.Dataset):
             file_path = os.path.join(file_src, f"{split}.json")
             entries = pd.DataFrame(json.load(open(file_path)))
             print(f"load {file_path}")
-        elif args.exp_type == "ub":
-            pass
+        elif args.exp_type == "ref":
+            file_path = os.path.join(file_src, f"{split}_ref.json")
+            entries = pd.DataFrame(json.load(open(file_path)))
             print("Use grounding dataset")
             print(f"load {file_path}")
         else:
@@ -248,6 +249,8 @@ class VQAMIMICDataset(torch.utils.data.Dataset):
             img_path = os.path.join(img_root, entry["image_path"])
 
             # TODO: use the collator...
+            if not isinstance(entry["answer"], list):
+                entry["answer"] = [entry["answer"]]
             target = mlb.transform([entry["answer"]])
             target = torch.FloatTensor(target).squeeze(0)
 

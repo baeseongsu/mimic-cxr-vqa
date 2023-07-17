@@ -530,7 +530,7 @@ if __name__ == "__main__":
     #### For MIMIC ####
     parser.add_argument('--seed', default=42, type=int)
     parser.add_argument('--img_size', default=224, type=int)
-    parser.add_argument("--imgroot", default="../../../physionet.org/files/mimic-cxr-jpg/2.0.0/re512_3ch_contour_cropped", type=str)
+    parser.add_argument("--imgroot", default="../../../physionet.org/files/mimic-cxr-jpg/re512_3ch_contour_cropped", type=str)
     parser.add_argument("--dataroot", default="../../dataset", type=str)
     
     parser.add_argument("--cropping_type", dest="cropping_type", type=str, default=None, choices=["img_crop", "feat_crop", "full_img"])
