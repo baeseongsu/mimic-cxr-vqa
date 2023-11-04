@@ -1,5 +1,13 @@
 # Changelog
 
+## [v1.0.0](https://github.com/baeseongsu/mimic-cxr-vqa/tree/v1.0.0) (2023-11-04)
+
+[Full Changelog](https://github.com/baeseongsu/mimic-cxr-vqa/compare/v0.1.0...v1.0.0)
+
+**Merged pull requests:**
+
+- v1.0.0 release [\#1](https://github.com/baeseongsu/mimic-cxr-vqa/pull/1) ([baeseongsu](https://github.com/baeseongsu))
+
 ## [v0.1.0](https://github.com/baeseongsu/mimic-cxr-vqa/tree/v0.1.0) (2023-06-21)
 
 [Full Changelog](https://github.com/baeseongsu/mimic-cxr-vqa/compare/29ff45b86938209a905b67564845997adc6185f1...v0.1.0)
