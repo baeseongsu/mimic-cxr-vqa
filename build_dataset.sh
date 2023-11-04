@@ -14,7 +14,7 @@ CHEST_IMAGENOME_SILVER="${CHEST_IMAGENOME_BASE}/silver_dataset"
 CHEST_IMAGENOME_GOLD="$CHEST_IMAGENOME_BASE/gold_dataset"
 CHEST_IMAGENOME_UTILS="$CHEST_IMAGENOME_BASE/utils/scene_postprocessing"
 CHEST_IMAGENOME_SEMANTICS="$CHEST_IMAGENOME_BASE/semantics"
-MIMIC_IV="https://physionet.org/files/mimiciv/2.0"
+MIMIC_IV="https://physionet.org/files/mimiciv/2.2"
 
 # Define wget parameters for readability
 WGET_PARAMS="-r -N -c -np --user $USERNAME --password $PASSWORD"
@@ -52,7 +52,7 @@ download_and_extract "$CHEST_IMAGENOME_SEMANTICS/label_to_UMLS_mapping.json" "ph
 download_and_extract "$CHEST_IMAGENOME_SEMANTICS/objects_extracted_from_reports_v1.txt" "physionet.org/files/chest-imagenome/1.0.0/semantics"
 
 # Download MIMIC-IV patients table
-download_and_extract "$MIMIC_IV/hosp/patients.csv.gz" "physionet.org/files/mimiciv/2.0/hosp"
+download_and_extract "$MIMIC_IV/hosp/patients.csv.gz" "physionet.org/files/mimiciv/2.2/hosp"
 
 # Save current directory
 orig_dir=$(pwd)
@@ -97,7 +97,7 @@ done
 
 for split in "${SPLITS[@]}"; do
     python dataset_builder/generate_answer.py \
-        --mimic_iv_dir "physionet.org/files/mimiciv/2.0/" \
+        --mimic_iv_dir "physionet.org/files/mimiciv/2.2/" \
         --mimic_cxr_jpg_dir "physionet.org/files/mimic-cxr-jpg/2.0.0/" \
         --chest_imagenome_dir "physionet.org/files/chest-imagenome/1.0.0/" \
         --label_dataset_path "dataset_builder/preprocessed_data/${split}_dataset.csv" \

@@ -205,33 +205,45 @@ class LabelPreprocessor:
         # full ont
         self.ont = ont
 
-    def preprocessLabel_category(self, flag="silver"):
+    def get_dataset_by_flag(self, flag="silver"):
+        datasets = {
+            "silver": self.silver_dataset,
+            "gold": self.gold_dataset,
+            "gold+": self.gold_dataset,
+        }
+
+        if flag not in datasets:
+            raise ValueError("flag must be either 'silver', 'gold', or 'gold+'")
+
+        dataset = datasets[flag].copy()
+        return dataset
+
+    def keep_dataset_by_flag(self, dataset, flag="silver"):
+        if flag not in ["silver", "gold", "gold+"]:
+            raise ValueError("flag must be either 'silver', 'gold', or 'gold+'")
+
         if flag == "silver":
-            silver_dataset = self.silver_dataset.copy()
-            silver_dataset = silver_dataset[silver_dataset["categoryID"] != "nlp"]
-            assert "normal" not in silver_dataset.label_name.unique()
-            assert "abnormal" not in silver_dataset.label_name.unique()
-            self.silver_dataset = silver_dataset.reset_index(drop=True)
-        elif flag in ["gold", "gold+"]:
-            gold_dataset = self.gold_dataset
-            gold_dataset = gold_dataset[gold_dataset["categoryID"] != "nlp"]
-            assert "normal" not in gold_dataset.label_name.unique()
-            assert "abnormal" not in gold_dataset.label_name.unique()
-            self.gold_dataset = gold_dataset.reset_index(drop=True)
+            self.silver_dataset = dataset
         else:
-            raise ValueError("flag must be either 'silver' or 'gold'")
+            self.gold_dataset = dataset
+
+    def preprocessLabel_category(self, flag="silver"):
+        dataset = self.get_dataset_by_flag(flag)
+
+        dataset = dataset[dataset["categoryID"] != "nlp"]
+        assert "normal" not in dataset.label_name.unique()
+        assert "abnormal" not in dataset.label_name.unique()
+        dataset = dataset.reset_index(drop=True)
+
+        self.keep_dataset_by_flag(dataset, flag)
 
     def preprocessLabel_bbox(self, flag="silver"):
-        if flag == "silver":
-            silver_dataset = self.silver_dataset.copy()
-            silver_dataset = silver_dataset[silver_dataset["bbox"] != "unknown"]
-            self.silver_dataset = silver_dataset.reset_index(drop=True)
-        elif flag in ["gold", "gold+"]:
-            gold_dataset = self.gold_dataset.copy()
-            gold_dataset = gold_dataset[gold_dataset["bbox"] != "unknown"]
-            self.gold_dataset = gold_dataset.reset_index(drop=True)
-        else:
-            raise ValueError("flag must be either 'silver' or 'gold'")
+        dataset = self.get_dataset_by_flag(flag)
+
+        dataset = dataset[dataset["bbox"] != "unknown"]
+        dataset = dataset.reset_index(drop=True)
+
+        self.keep_dataset_by_flag(dataset, flag)
 
     def preprocessLabel_cohort(self, flag="silver"):
         if flag == "silver":
@@ -241,6 +253,11 @@ class LabelPreprocessor:
             )
             silver_iids = silver_cohort["image_id"].unique()
             silver_dataset = silver_dataset[silver_dataset.image_id.isin(silver_iids)]
+            silver_dataset["subject_id"] = silver_dataset["image_id"].map(silver_cohort.set_index("image_id")["subject_id"])
+            silver_dataset["subject_id"] = silver_dataset["subject_id"].astype(int)
+            assert silver_dataset["subject_id"].isna().sum() == 0
+
+            silver_dataset = silver_dataset[["subject_id", "study_id", "image_id", "sent_loc", "bbox", "relation", "label_name", "categoryID", "annot_id", "object_id"]]
             self.silver_dataset = silver_dataset.reset_index(drop=True)
 
         elif flag == "gold":
@@ -251,7 +268,11 @@ class LabelPreprocessor:
             gold_iids = gold_cohort["image_id"].unique()
             gold_dataset = gold_dataset[gold_dataset["image_id"].isin(gold_iids)]
             assert len(gold_dataset["image_id"].unique()) == 500
+            gold_dataset["subject_id"] = gold_dataset["image_id"].map(gold_cohort.set_index("image_id")["subject_id"])
+            gold_dataset["subject_id"] = gold_dataset["subject_id"].astype(int)
+            assert gold_dataset["subject_id"].isna().sum() == 0
 
+            gold_dataset = gold_dataset[["subject_id", "study_id", "image_id", "sent_loc", "bbox", "relation", "label_name", "categoryID", "annot_id", "object_id"]]
             self.gold_dataset = gold_dataset.reset_index(drop=True)
 
         elif flag == "gold+":
@@ -280,27 +301,35 @@ class LabelPreprocessor:
             print("NOTE: Some gold studies (>=2nd) are missing in the silver dataset!!!")
             gold_dataset = pd.concat([gold_dataset, silver_dataset], axis=0)
 
+            gold_dataset["subject_id"] = gold_dataset["image_id"].map(gold_cohort.set_index("image_id")["subject_id"])
+            gold_dataset["subject_id"] = gold_dataset["subject_id"].astype(int)
+            assert gold_dataset["subject_id"].isna().sum() == 0
+
+            gold_dataset = gold_dataset[["subject_id", "study_id", "image_id", "sent_loc", "bbox", "relation", "label_name", "categoryID", "annot_id", "object_id"]]
             self.gold_dataset = gold_dataset.reset_index(drop=True)
+            print(gold_dataset.head())
 
         else:
             raise ValueError("flag must be either 'silver' or 'gold'")
 
     def aggregate_labels_by_report_level(self, flag="silver", agg_option="last"):
-        if flag == "silver":
-            silver_dataset = self.silver_dataset
-            silver_dataset = silver_dataset.sort_values(by=["study_id", "image_id", "sent_loc", "bbox", "label_name"])
-            silver_dataset = silver_dataset.drop_duplicates(subset=["study_id", "image_id", "bbox", "label_name"], keep=agg_option)
-            self.silver_dataset = silver_dataset.reset_index(drop=True)
-        elif flag in ["gold", "gold+"]:
-            gold_dataset = self.gold_dataset
-            gold_dataset = gold_dataset.sort_values(by=["study_id", "image_id", "sent_loc", "bbox", "label_name"])
-            gold_dataset = gold_dataset.drop_duplicates(subset=["study_id", "image_id", "bbox", "label_name"], keep=agg_option)
-            self.gold_dataset = gold_dataset.reset_index(drop=True)
-        else:
-            raise ValueError("flag must be either 'silver' or 'gold'")
+        sort_columns = ["subject_id", "study_id", "image_id", "sent_loc", "bbox", "label_name"]
+        agg_columns = ["subject_id", "study_id", "image_id", "bbox", "label_name"]
+
+        dataset = self.get_dataset_by_flag(flag)
+
+        dataset = dataset.sort_values(by=sort_columns)
+        dataset = dataset.drop_duplicates(subset=agg_columns, keep=agg_option)
+        dataset = dataset.reset_index(drop=True)
+
+        self.keep_dataset_by_flag(dataset, flag)
 
     def apply_attribute_p2c_ontology_to_dataset(self, flag="silver"):
         def _apply_attribute_p2c_ontology_to_dataset(dataset, attr_c2p_map, attr_cat_v1):
+            sort_columns = ["subject_id", "study_id", "image_id", "sent_loc", "bbox", "label_name"]
+            agg_columns = ["subject_id", "study_id", "image_id", "bbox", "label_name"]
+            agg_option = "last"
+
             dataset_parents = None
             for child, parents in attr_c2p_map.items():
                 for parent in parents:
@@ -312,23 +341,23 @@ class LabelPreprocessor:
                     )
                     dataset_parents = pd.concat([dataset_parents, dataset_parent], axis=0) if dataset_parents is not None else dataset_parent
             dataset = pd.concat([dataset, dataset_parents], axis=0)
-            dataset = dataset.sort_values(by=["study_id", "image_id", "sent_loc", "bbox", "label_name"])
-            dataset = dataset.drop_duplicates(subset=["study_id", "image_id", "bbox", "label_name"], keep="last")
+            dataset = dataset.sort_values(by=sort_columns)
+            dataset = dataset.drop_duplicates(subset=agg_columns, keep=agg_option)
             return dataset
 
-        if flag == "silver":
-            silver_dataset = self.silver_dataset
-            silver_dataset = _apply_attribute_p2c_ontology_to_dataset(dataset=silver_dataset, attr_c2p_map=self.attr_c2p_map, attr_cat_v1=self.attr_cat_v1)
-            self.silver_dataset = silver_dataset.reset_index(drop=True)
-        elif flag in ["gold", "gold+"]:
-            gold_dataset = self.gold_dataset
-            gold_dataset = _apply_attribute_p2c_ontology_to_dataset(dataset=gold_dataset, attr_c2p_map=self.attr_c2p_map, attr_cat_v1=self.attr_cat_v1)
-            self.gold_dataset = gold_dataset.reset_index(drop=True)
-        else:
-            raise ValueError("flag must be either 'silver' or 'gold'")
+        dataset = self.get_dataset_by_flag(flag)
+
+        dataset = _apply_attribute_p2c_ontology_to_dataset(dataset=dataset, attr_c2p_map=self.attr_c2p_map, attr_cat_v1=self.attr_cat_v1)
+        dataset = dataset.reset_index(drop=True)
+
+        self.keep_dataset_by_flag(dataset, flag)
 
     def apply_object_p2c_ontology_to_dataset(self, flag="silver"):
         def _apply_object_p2c_ontology_to_dataset(dataset, obj_c2p_map):
+            sort_columns = ["subject_id", "study_id", "image_id", "sent_loc", "bbox", "label_name"]
+            agg_columns = ["subject_id", "study_id", "image_id", "bbox", "label_name"]
+            agg_option = "last"
+
             dataset_parents = None
             for child, parents in obj_c2p_map.items():
                 for parent in parents:
@@ -340,20 +369,16 @@ class LabelPreprocessor:
                     dataset_parent["object_id"] = dataset_parent["image_id"] + "_" + dataset_parent["bbox"]
                     dataset_parents = pd.concat([dataset_parents, dataset_parent], axis=0) if dataset_parents is not None else dataset_parent
             dataset = pd.concat([dataset, dataset_parents], axis=0)
-            dataset = dataset.sort_values(by=["study_id", "image_id", "sent_loc", "bbox", "label_name"])
-            dataset = dataset.drop_duplicates(subset=["study_id", "image_id", "bbox", "label_name"], keep="last")
+            dataset = dataset.sort_values(by=sort_columns)
+            dataset = dataset.drop_duplicates(subset=agg_columns, keep=agg_option)
             return dataset
 
-        if flag == "silver":
-            silver_dataset = self.silver_dataset
-            silver_dataset = _apply_object_p2c_ontology_to_dataset(dataset=silver_dataset, obj_c2p_map=self.obj_c2p_map)
-            self.silver_dataset = silver_dataset.reset_index(drop=True)
-        elif flag in ["gold", "gold+"]:
-            gold_dataset = self.gold_dataset
-            gold_dataset = _apply_object_p2c_ontology_to_dataset(dataset=gold_dataset, obj_c2p_map=self.obj_c2p_map)
-            self.gold_dataset = gold_dataset.reset_index(drop=True)
-        else:
-            raise ValueError("flag must be either 'silver' or 'gold'")
+        dataset = self.get_dataset_by_flag(flag)
+
+        dataset = _apply_object_p2c_ontology_to_dataset(dataset=dataset, obj_c2p_map=self.obj_c2p_map)
+        dataset = dataset.reset_index(drop=True)
+
+        self.keep_dataset_by_flag(dataset, flag)
 
     def apply_object_attribute_possible_relationship_to_dataset(self, flag="silver"):
         def _apply_object_attribute_possible_relationship_to_dataset(dataset, ont):
@@ -369,16 +394,12 @@ class LabelPreprocessor:
             dataset = dataset[~dataset.annot_id.isin(removed_annot_ids)]
             return dataset
 
-        if flag == "silver":
-            silver_dataset = self.silver_dataset
-            silver_dataset = _apply_object_attribute_possible_relationship_to_dataset(dataset=silver_dataset, ont=self.ont)
-            self.silver_dataset = silver_dataset.reset_index(drop=True)
-        elif flag in ["gold", "gold+"]:
-            gold_dataset = self.gold_dataset
-            gold_dataset = _apply_object_attribute_possible_relationship_to_dataset(dataset=gold_dataset, ont=self.ont)
-            self.gold_dataset = gold_dataset.reset_index(drop=True)
-        else:
-            raise ValueError("flag must be either 'silver' or 'gold'")
+        dataset = self.get_dataset_by_flag(flag)
+
+        dataset = _apply_object_attribute_possible_relationship_to_dataset(dataset=dataset, ont=self.ont)
+        dataset = dataset.reset_index(drop=True)
+
+        self.keep_dataset_by_flag(dataset, flag)
 
     def sanity_check(self, flag="silver"):
         if flag == "silver":
@@ -396,10 +417,6 @@ class LabelPreprocessor:
         assert (dataset.annot_id.apply(lambda x: x.split("|")[-1]) != dataset.label_name).sum() == 0
 
     def remove_minority_label(self, flag="silver"):
-        def _remove_minority_label(dataset, removed_objs, removed_attrs):
-            dataset = dataset[(~dataset["bbox"].isin(removed_objs)) & (~dataset["label_name"].isin(removed_attrs))]
-            return dataset
-
         REMOVED_OBJS = ["left arm", "right arm"]
         REMOVED_ATTRS = [
             "artifact",
@@ -411,84 +428,40 @@ class LabelPreprocessor:
             "sternotomy wires",
         ]
 
-        if flag == "silver":
-            silver_dataset = self.silver_dataset
-            silver_dataset = _remove_minority_label(dataset=silver_dataset, removed_objs=REMOVED_OBJS, removed_attrs=REMOVED_ATTRS)
-            self.silver_dataset = silver_dataset.reset_index(drop=True)
-        elif flag in ["gold", "gold+"]:
-            gold_dataset = self.gold_dataset
-            gold_dataset = _remove_minority_label(dataset=gold_dataset, removed_objs=REMOVED_OBJS, removed_attrs=REMOVED_ATTRS)
-            self.gold_dataset = gold_dataset.reset_index(drop=True)
-        else:
-            raise ValueError("flag must be either 'silver' or 'gold'")
+        dataset = self.get_dataset_by_flag(flag)
+
+        dataset = dataset[(~dataset["bbox"].isin(REMOVED_OBJS)) & (~dataset["label_name"].isin(REMOVED_ATTRS))]
+        dataset = dataset.reset_index(drop=True)
+
+        self.keep_dataset_by_flag(dataset, flag)
 
     def restore_normal_relation(self, flag="silver"):
+        sort_columns = ["subject_id", "study_id", "image_id", "bbox", "label_name", "relation"]
+        agg_columns = ["subject_id", "study_id", "image_id", "bbox", "label_name"]
+        agg_option = "last"
+
         # compute possible object-attribute combinations (in here, a total of 609 combinations)
-        objattr_combs = []
-        for k, v in self.ont["possible_attribute_of"].items():
-            if k in self.attr_v1:
-                objattr_combs += [(vv, 0, k, self.attr_cat_v1[k]) for vv in v if vv in self.obj_v1]
+        objattr_combs = [(vv, 0, k, self.attr_cat_v1[k]) for k, v in self.ont["possible_attribute_of"].items() if k in self.attr_v1 for vv in v if vv in self.obj_v1]
         objattr_combs = pd.DataFrame(objattr_combs, columns=["bbox", "relation", "label_name", "categoryID"])
 
-        if flag == "silver":
-            silver_dataset = self.silver_dataset
+        dataset = self.get_dataset_by_flag(flag)
 
-            silver_all = pd.merge(silver_dataset[["study_id", "image_id"]].drop_duplicates().assign(key=1), objattr_combs.assign(key=1), on="key").drop("key", axis=1)
-            silver_all["annot_id"] = silver_all["study_id"].astype(str) + "|" + silver_all["bbox"] + "|" + silver_all["relation"].astype(str) + "|" + silver_all["label_name"]
-            silver_all["object_id"] = silver_all["image_id"] + "_" + silver_all["bbox"]
+        all_data = pd.merge(dataset[["subject_id", "study_id", "image_id"]].drop_duplicates().assign(key=1), objattr_combs.assign(key=1), on="key").drop("key", axis=1)
+        all_data["annot_id"] = all_data["study_id"].astype(str) + "|" + all_data["bbox"] + "|" + all_data["relation"].astype(str) + "|" + all_data["label_name"]
+        all_data["object_id"] = all_data["image_id"] + "_" + all_data["bbox"]
 
-            silver_dataset = pd.concat([silver_dataset, silver_all])
-            silver_dataset = silver_dataset.sort_values(by=["study_id", "image_id", "bbox", "label_name", "relation"], ascending=True)
-            silver_dataset = silver_dataset.drop_duplicates(
-                subset=[
-                    "study_id",
-                    "image_id",
-                    "bbox",
-                    "label_name",
-                ],
-                keep="last",
-            )
+        dataset = pd.concat([dataset, all_data])
+        dataset = dataset.sort_values(by=sort_columns, ascending=True)
+        dataset = dataset.drop_duplicates(subset=agg_columns, keep=agg_option)
+        dataset = dataset.reset_index(drop=True)
 
-            self.silver_dataset = silver_dataset.reset_index(drop=True)
-
-        elif flag in ["gold", "gold+"]:
-            gold_dataset = self.gold_dataset
-
-            gold_all = pd.merge(gold_dataset[["study_id", "image_id"]].drop_duplicates().assign(key=1), objattr_combs.assign(key=1), on="key").drop("key", axis=1)
-            gold_all["annot_id"] = gold_all["study_id"].astype(str) + "|" + gold_all["bbox"] + "|" + gold_all["relation"].astype(str) + "|" + gold_all["label_name"]
-            gold_all["object_id"] = gold_all["image_id"] + "_" + gold_all["bbox"]
-
-            gold_dataset = pd.concat([gold_dataset, gold_all])
-            gold_dataset = gold_dataset.sort_values(by=["study_id", "image_id", "bbox", "label_name", "relation"], ascending=True)
-            gold_dataset = gold_dataset.drop_duplicates(
-                subset=[
-                    "study_id",
-                    "image_id",
-                    "bbox",
-                    "label_name",
-                ],
-                keep="last",
-            )
-
-            self.gold_dataset = gold_dataset.reset_index(drop=True)
-        else:
-            raise ValueError("flag must be either 'silver' or 'gold'")
+        self.keep_dataset_by_flag(dataset, flag)
 
     def save_label_dataset(self, flag="silver"):
-        if flag == "silver":
-            silver_dataset = self.silver_dataset
-            silver_dataset.to_csv(os.path.join(self.args.save_dir, "silver_dataset.csv"), index=False)
-            print("silver dataset saved")
-        elif flag == "gold":
-            gold_dataset = self.gold_dataset
-            gold_dataset.to_csv(os.path.join(self.args.save_dir, "gold_dataset.csv"), index=False)
-            print("gold dataset saved")
-        elif flag == "gold+":
-            gold_dataset = self.gold_dataset
-            gold_dataset.to_csv(os.path.join(self.args.save_dir, "gold+_dataset.csv"), index=False)
-            print("gold+ dataset saved")
-        else:
-            raise ValueError("flag must be either 'silver' or 'gold'")
+        dataset = self.get_dataset_by_flag(flag)
+
+        dataset.to_csv(os.path.join(self.args.save_dir, f"{flag}_dataset.csv"), index=False)
+        print(f"{flag} dataset saved, shape: {dataset.shape}")
 
     def split_and_save_dataset(self):
         from sklearn.model_selection import train_test_split
@@ -504,18 +477,23 @@ class LabelPreprocessor:
         silver_dataset_abn = silver_dataset[silver_dataset["relation"] == 1]
         silver_dataset_nm = silver_dataset[~silver_dataset.study_id.isin(silver_dataset_abn.study_id.unique())]
 
-        # 2: split sids (train, valid)
         SEED = 103
         TEST_SIZE = 0.05
 
-        train_study_ids_abn = silver_dataset_abn.study_id.unique()
-        train_study_ids_abn, valid_study_ids_abn = train_test_split(train_study_ids_abn, test_size=TEST_SIZE, random_state=SEED)
-        train_study_ids_nm = silver_dataset_nm.study_id.unique()
-        train_study_ids_nm, valid_study_ids_nm = train_test_split(train_study_ids_nm, test_size=TEST_SIZE, random_state=SEED)
+        # 2: split subject_ids (train, valid)
+        train_subject_ids_abn = silver_dataset_abn.subject_id.unique()
+        train_subject_ids_abn, valid_subject_ids_abn = train_test_split(train_subject_ids_abn, test_size=TEST_SIZE, random_state=SEED)
+        train_subject_ids_nm = silver_dataset_nm.subject_id.unique()
+        train_subject_ids_nm, valid_subject_ids_nm = train_test_split(train_subject_ids_nm, test_size=TEST_SIZE, random_state=SEED)
 
-        train_sids = train_study_ids_abn.tolist() + train_study_ids_nm.tolist()
-        valid_sids = valid_study_ids_abn.tolist() + valid_study_ids_nm.tolist()
-        # test_sids = gold_dataset.study_id.unique().tolist()
+        train_sids = (
+            silver_dataset_abn[silver_dataset_abn.subject_id.isin(train_subject_ids_abn)].study_id.unique().tolist()
+            + silver_dataset_nm[silver_dataset_nm.subject_id.isin(train_subject_ids_nm)].study_id.unique().tolist()
+        )
+        valid_sids = (
+            silver_dataset_abn[silver_dataset_abn.subject_id.isin(valid_subject_ids_abn)].study_id.unique().tolist()
+            + silver_dataset_nm[silver_dataset_nm.subject_id.isin(valid_subject_ids_nm)].study_id.unique().tolist()
+        )
 
         train_dataset = silver_dataset.loc[silver_dataset["study_id"].isin(train_sids)]
         valid_dataset = silver_dataset.loc[silver_dataset["study_id"].isin(valid_sids)]
