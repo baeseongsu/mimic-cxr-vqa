@@ -1,20 +1,20 @@
-<div align="center">
 
-# MIMIC-CXR-VQA &#x1FA7B;
+# MIMIC-CXR-VQA
 
 *A new collection of medical visual question answering dataset on MIMIC-CXR database*
 
-</div>
 
 ## Overview
 
-The MIMIC-CXR-VQA dataset is a complex (involving set and logical operations), diverse (with 48 templates), and large-scale (approximately 378K) resource, designed specifically for Visual Question Answering (VQA) tasks in the medical domain. Primarily focusing on chest radiographs, this dataset was derived from the MIMIC-CXR-JPG and Chest ImaGenome datasets, both of which were sourced from Physionet.
+The MIMIC-CXR-VQA dataset is a complex (involving set and logical operations), diverse (with 48 templates), and large-scale (approximately 377K) resource, designed specifically for Visual Question Answering (VQA) tasks in the medical domain. Primarily focusing on chest radiographs, this dataset was mainly derived from the MIMIC-CXR-JPG and Chest ImaGenome datasets, both of which were sourced from Physionet.
 
 The goal of the MIMIC-CXR-VQA dataset is to serve as a benchmark for evaluating the effectiveness of current medical VQA approaches. It not only functions as a tool for traditional medical VQA tasks but also has the unique quality of being an image-based Electronic Health Records (EHRs) Question Answering dataset resource. Therefore, we utilize question templates from the MIMIC-CXR-VQA dataset as seed question templates for image modality, to construct a multi-modal EHR QA dataset, [EHRXQA](https://github.com/baeseongsu/ehrxqa).
 
 ## Features
 
-More details will be provided soon.
+- [x] Provide a script to download source datasets (MIMIC-CXR-JPG, Chest ImaGenome, and MIMIC-IV) from Physionet.
+- [x] Provide a script to preprocess the source datasets.
+- [x] Provide a script to generate the MIMIC-CXR-VQA dataset (with answer information).
 
 ## Installation
 
@@ -50,7 +50,7 @@ We take data privacy very seriously. All of the data you access through this rep
 
 ### Access Requirements
 
-The MIMIC-CXR-VQA dataset is constructed from the MIMIC-CXR-JPG (v2.0.0), Chest ImaGenome (v1.0.0), and MIMIC-IV (v2.0). All these source datasets require a credentialed Physionet license. Due to these requirements and in adherence to the Data Use Agreement (DUA), only credentialed users can access the MIMIC-CXR-VQA dataset files (see Access Policy). To access the source datasets, you must fulfill all of the following requirements:
+The MIMIC-CXR-VQA dataset is constructed from the MIMIC-CXR-JPG (v2.0.0), Chest ImaGenome (v1.0.0), and MIMIC-IV (v2.2). All these source datasets require a credentialed Physionet license. Due to these requirements and in adherence to the Data Use Agreement (DUA), only credentialed users can access the MIMIC-CXR-VQA dataset files (see Access Policy). To access the source datasets, you must fulfill all of the following requirements:
 
 1. Be a [credentialed user](https://physionet.org/settings/credentialing/)
     - If you do not have a PhysioNet account, register for one [here](https://physionet.org/register/).
@@ -59,7 +59,7 @@ The MIMIC-CXR-VQA dataset is constructed from the MIMIC-CXR-JPG (v2.0.0), Chest 
 2. Sign the data use agreement (DUA) for each project
     - https://physionet.org/sign-dua/mimic-cxr-jpg/2.0.0/
     - https://physionet.org/sign-dua/chest-imagenome/1.0.0/
-    - https://physionet.org/sign-dua/mimiciv/2.0/
+    - https://physionet.org/sign-dua/mimiciv/2.2/
 
 ### Accessing the MIMIC-CXR-VQA Dataset
 
@@ -188,7 +188,7 @@ To be specific, here is the example instance:
 
 ## Versioning
 
-We employ semantic versioning for our dataset, with the current version being v0.1.0. Generally, we will maintain and provide updates only for the latest version of the dataset. However, in cases where significant updates occur or when older versions are required for validating previous research, we may exceptionally retain previous dataset versions for a period of up to one year. For a detailed list of changes made in each version, check out our CHANGELOG.
+We employ semantic versioning for our dataset, with the current version being v1.0.0. Generally, we will maintain and provide updates only for the latest version of the dataset. However, in cases where significant updates occur or when older versions are required for validating previous research, we may exceptionally retain previous dataset versions for a period of up to one year. For a detailed list of changes made in each version, check out our CHANGELOG.
 
 ## Contributing
 
@@ -204,8 +204,18 @@ More details will be provided soon.
 
 ## Citation
 
-More details will be provided soon.
+When you use the MIMIC-CXR-VQA dataset, we would appreciate it if you cite the following:
+```
+@misc{bae2023ehrxqa,
+      title={EHRXQA: A Multi-Modal Question Answering Dataset for Electronic Health Records with Chest X-ray Images}, 
+      author={Seongsu Bae and Daeun Kyung and Jaehee Ryu and Eunbyeol Cho and Gyubok Lee and Sunjun Kweon and Jungwoo Oh and Lei Ji and Eric I-Chao Chang and Tackeun Kim and Edward Choi},
+      year={2023},
+      eprint={2310.18652},
+      archivePrefix={arXiv},
+      primaryClass={cs.CL}
+}
+```
 
 ## License
 
-The code in this repository is provided under the terms of the MIT License. The final output of the dataset created using this code, the MIMIC-CXR-VQA, is subject to the terms and conditions of the original datasets from Physionet: [MIMIC-CXR-JPG License](https://physionet.org/content/mimic-cxr/view-license/2.0.0/), [Chest ImaGenome License](https://physionet.org/content/chest-imagenome/view-license/1.0.0/), and [MIMIC-IV License](https://physionet.org/content/mimiciv/view-license/2.0/).
+The code in this repository is provided under the terms of the MIT License. The final output of the dataset created using this code, the MIMIC-CXR-VQA, is subject to the terms and conditions of the original datasets from Physionet: [MIMIC-CXR-JPG License](https://physionet.org/content/mimic-cxr/view-license/2.0.0/), [Chest ImaGenome License](https://physionet.org/content/chest-imagenome/view-license/1.0.0/), and [MIMIC-IV License](https://physionet.org/content/mimiciv/view-license/2.2/).
