@@ -206,13 +206,11 @@ More details will be provided soon.
 
 When you use the MIMIC-CXR-VQA dataset, we would appreciate it if you cite the following:
 ```
-@misc{bae2023ehrxqa,
-      title={EHRXQA: A Multi-Modal Question Answering Dataset for Electronic Health Records with Chest X-ray Images}, 
-      author={Seongsu Bae and Daeun Kyung and Jaehee Ryu and Eunbyeol Cho and Gyubok Lee and Sunjun Kweon and Jungwoo Oh and Lei Ji and Eric I-Chao Chang and Tackeun Kim and Edward Choi},
-      year={2023},
-      eprint={2310.18652},
-      archivePrefix={arXiv},
-      primaryClass={cs.CL}
+@article{bae2023ehrxqa,
+  title={EHRXQA: A Multi-Modal Question Answering Dataset for Electronic Health Records with Chest X-ray Images},
+  author={Bae, Seongsu and Kyung, Daeun and Ryu, Jaehee and Cho, Eunbyeol and Lee, Gyubok and Kweon, Sunjun and Oh, Jungwoo and Ji, Lei and Chang, Eric I and Kim, Tackeun and others},
+  journal={arXiv preprint arXiv:2310.18652},
+  year={2023}
 }
 ```
 
