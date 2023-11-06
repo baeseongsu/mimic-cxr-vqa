@@ -10,6 +10,29 @@ The MIMIC-CXR-VQA dataset is a complex (involving set and logical operations), d
 
 The goal of the MIMIC-CXR-VQA dataset is to serve as a benchmark for evaluating the effectiveness of current medical VQA approaches. It not only functions as a tool for traditional medical VQA tasks but also has the unique quality of being an image-based Electronic Health Records (EHRs) Question Answering dataset resource. Therefore, we utilize question templates from the MIMIC-CXR-VQA dataset as seed question templates for image modality, to construct a multi-modal EHR QA dataset, [EHRXQA](https://github.com/baeseongsu/ehrxqa).
 
+
+## Table of Contents
+
+- [Overview](#overview)
+- [Features](#features)
+- [Installation](#installation)
+  - [For Linux](#for-linux)
+- [Setup](#setup)
+- [Usage](#usage)
+  - [Privacy](#privacy)
+  - [Access Requirements](#access-requirements)
+  - [Accessing the MIMIC-CXR-VQA Dataset](#accessing-the-mimic-cxr-vqa-dataset)
+  - [Downloading MIMIC-CXR-JPG Images](#downloading-mimic-cxr-jpg-images)
+  - [Dataset Structure](#dataset-structure)
+  - [Dataset Description](#dataset-description)
+- [Versioning](#versioning)
+- [Contributing](#contributing)
+- [Contact](#contact)
+- [Acknowledgements](#acknowledgements)
+- [Citation](#citation)
+- [License](#license)
+
+
 ## Features
 
 - [x] Provide a script to download source datasets (MIMIC-CXR-JPG, Chest ImaGenome, and MIMIC-IV) from Physionet.
