@@ -1,59 +1,59 @@
 #!/bin/bash
 
+# This script downloads the MIMIC-CXR-VQA dataset images after gathering image paths from JSON files.
+
 # Capture the start time
 start_time=$(date +%s)
 
-# Read username and password (for PhysioNet)
+# Prompt for PhysioNet credentials
+echo "Enter your PhysioNet credentials"
 read -p "Username: " USERNAME
 read -s -p "Password: " PASSWORD
-printf "\n"
+echo
 
-# Define directories and file names
-MIMIC_CXR="https://physionet.org/files/mimic-cxr-jpg/2.0.0"
+# Base URL for the MIMIC-CXR dataset
+MIMIC_CXR_JPG_DIR="https://physionet.org/files/mimic-cxr-jpg/2.0.0"
 
-# Define wget parameters for readability
+# wget parameters for downloading files
 WGET_PARAMS="-r -N -c -np --user $USERNAME --password $PASSWORD"
 
-# Helper function to download and extract files
+# Function to download files
 download() {
     local file_url=$1
-    local file_name=$(basename "$file_url")
-
-    # Download the file
-    wget $WGET_PARAMS "$file_url"
-    if [ $? -ne 0 ]; then
-        printf "Error: Failed to download $file_url\n"
-        exit 1
-    fi
+    wget $WGET_PARAMS "$file_url" || { echo "Error: Failed to download $file_url" >&2; exit 1; }
 }
 
-# Function to read image paths from JSON using Python
+# Function to extract image paths from JSON files
 get_image_paths() {
     local json_file=$1
     python -c "import json; f=open('$json_file'); data=json.load(f); print('\n'.join([item['image_path'] for item in data]))"
 }
 
-# Read JSON file and gather image paths using Python
+# Gather image paths from JSON dataset files
 image_paths_train=$(get_image_paths 'mimiccxrvqa/dataset/train.json')
 image_paths_valid=$(get_image_paths 'mimiccxrvqa/dataset/valid.json')
 image_paths_test=$(get_image_paths 'mimiccxrvqa/dataset/test.json')
 
-image_paths=$(printf "%s\n%s\n%s\n" "$image_paths_train" "$image_paths_valid" "$image_paths_test")
+# Combine paths from train, valid, and test
+image_paths=$(echo -e "$image_paths_train\n$image_paths_valid\n$image_paths_test")
 
-# Convert string to array
-IFS=$'\n' read -rd '' -a arr <<<"$image_paths"
+# Remove duplicates and convert to an array
+readarray -t arr <<<"$(echo "$image_paths" | sort -u)"
 
-# Make unique
-arr=($(echo "${arr[@]}" | tr ' ' '\n' | sort -u | tr '\n' ' '))
+# Display the total number of unique images
+echo "Total number of unique images: ${#arr[@]}"
 
-# Count
-printf "Total number of images: %d\n" "${#arr[@]}"
-
-# Download MIMIC-CXR images
-printf "Downloading images...\n"
-for image_path in "${arr[@]}"
-do
-    printf "Downloading $image_path\n"
-    download "$MIMIC_CXR/files/$image_path"
+# Download the images
+echo "Downloading images..."
+for image_path in "${arr[@]}"; do
+    echo "Downloading $image_path"
+    download "$MIMIC_CXR_JPG_DIR/files/$image_path"
 done
-printf "All images have been successfully downloaded.\n"
+echo "All images have been successfully downloaded."
+
+# Capture the end time and calculate runtime
+end_time=$(date +%s)
+runtime=$((end_time - start_time))
+
+# Display the script runtime
+echo "Script runtime: $runtime seconds"
