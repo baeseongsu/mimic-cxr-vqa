@@ -105,11 +105,9 @@ for split in "${SPLITS[@]}"; do
         --output_path "mimiccxrvqa/dataset/${split}.json"
 done
 
-# Capture the end time
+# Capture the end time and calculate runtime
 end_time=$(date +%s)
-
-# Calculate the runtime
 runtime=$((end_time - start_time))
 
-# Display the runtime
+# Display the script runtime
 echo "Script runtime: $runtime seconds"
