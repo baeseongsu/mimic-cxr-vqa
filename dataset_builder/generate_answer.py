@@ -21,6 +21,22 @@ CONFIG = {
     ],
 }
 
+DATA_FIELDS = [
+    "split",
+    "idx",
+    "subject_id",
+    "study_id",
+    "image_id",
+    "image_path",
+    "question",
+    "semantic_type",
+    "content_type",
+    "template",
+    "template_program",
+    "template_arguments",
+    "answer",
+]
+
 
 def load_metadata(args):
     metadata = pd.read_csv(os.path.join(args.mimic_cxr_jpg_dir, "mimic-cxr-2.0.0-metadata.csv"))
@@ -168,6 +184,9 @@ def main(args):
             "answer": answer,
             **data,
         }
+
+        # re-order keys
+        new_data = {k: new_data[k] for k in DATA_FIELDS}
 
         if args.debug:
             # Verify data match
