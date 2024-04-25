@@ -5,16 +5,14 @@ import json
 import random
 import pandas as pd
 
-sys.path.append(os.path.dirname(__file__))
 from tqdm import tqdm
 from make_arrow import make_arrow_mmehr
 
 
-def prepro_vqa_mimiccxrvqa(
-    # data_root="../../../dataset",
-    data_root="/nfs_data_storage/mimiccxrvqa/dataset",
-    image_root="../../../../physionet.org/files/mimic-cxr-jpg/re512_3ch_contour_cropped",
-):
+def prepro_vqa_mimiccxrvqa(args):
+    data_root = args.data_root
+    image_root = args.image_root
+    save_root = args.save_root 
 
     random.seed(42)
 
@@ -50,74 +48,81 @@ def prepro_vqa_mimiccxrvqa(
 
     for split, questions in data.items():
         print(f"Make arrow file for {split} data")
-        _ = make_arrow_mmehr(questions, split, "vqa_mmehr", "data/finetune_arrows/")
+        _ = make_arrow_mmehr(questions, split, "vqa_mmehr", save_root)
     
 
-def prepro_vqa_vqa_rad(
-    data_root="data/finetune_data/vqa_rad",
-    image_root=f"data/finetune_data/vqa_rad/images",
-):
-    # data_root = "data/finetune_data/vqa_rad/"
-    # image_root = f"{data_root}/images"
-
-    random.seed(42)
-
-    data = {"train": [], "val": [], "test": []}
-
-    for split, file in zip(["train", "val", "test"], ["trainset.json", "valset.json", "testset.json"]):
-        with open(f"{data_root}/{file}", "r") as fp:
-            samples = json.load(fp)
-            for sample in samples:
-                img_path = os.path.join(image_root, sample["image_name"])
-                qid = sample["qid"]
-                question = sample["question"]
-                answer = sample["answer"]
-                answer_type = sample["answer_type"]
-                data[split].append(
-                    {
-                        "img_path": img_path,
-                        "qid": qid,
-                        "question": question,
-                        "answer": answer,
-                        "answer_type": answer_type,
-                    }
-                )
-    make_arrow_vqa(data, "vqa_vqa_rad", "data/finetune_arrows/")
-
-
-def prepro_vqa_slake(
-    data_root="data/finetune_data/slake",
-    image_root="data/finetune_data/slake/imgs",
-):
-    # data_root = "data/finetune_data/slake/"
-    # image_root = f"{data_root}/imgs"
-
-    random.seed(42)
-
-    data = {"train": [], "val": [], "test": []}
-
-    for split, file in zip(["train", "val", "test"], ["train.json", "validate.json", "test.json"]):
-        with open(f"{data_root}/{file}", "r") as fp:
-            samples = json.load(fp)
-            for sample in samples:
-                if sample["q_lang"] != "en":
-                    continue
-                img_path = os.path.join(image_root, sample["img_name"])
-                qid = sample["qid"]
-                question = sample["question"]
-                answer = sample["answer"]
-                answer_type = sample["answer_type"]
-                data[split].append(
-                    {
-                        "img_path": img_path,
-                        "qid": qid,
-                        "question": question,
-                        "answer": answer,
-                        "answer_type": answer_type,
-                    },
-                )
-    make_arrow_vqa(data, "vqa_slake", "data/finetune_arrows/")
-
-
 if __name__ == "__main__":
-    prepro_vqa_mimiccxrvqa()
+    import argparse
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--data_root", type=str, required=True)
+    parser.add_argument("--image_root", type=str, required=True)
+    parser.add_argument("--save_root", type=str, required=True)
+    args = parser.parse_args()
+    prepro_vqa_mimiccxrvqa(args)
+
+# def prepro_vqa_vqa_rad(
+#     data_root="data/finetune_data/vqa_rad",
+#     image_root=f"data/finetune_data/vqa_rad/images",
+# ):
+#     # data_root = "data/finetune_data/vqa_rad/"
+#     # image_root = f"{data_root}/images"
+
+#     random.seed(42)
+
+#     data = {"train": [], "val": [], "test": []}
+
+#     for split, file in zip(["train", "val", "test"], ["trainset.json", "valset.json", "testset.json"]):
+#         with open(f"{data_root}/{file}", "r") as fp:
+#             samples = json.load(fp)
+#             for sample in samples:
+#                 img_path = os.path.join(image_root, sample["image_name"])
+#                 qid = sample["qid"]
+#                 question = sample["question"]
+#                 answer = sample["answer"]
+#                 answer_type = sample["answer_type"]
+#                 data[split].append(
+#                     {
+#                         "img_path": img_path,
+#                         "qid": qid,
+#                         "question": question,
+#                         "answer": answer,
+#                         "answer_type": answer_type,
+#                     }
+#                 )
+#     make_arrow_vqa(data, "vqa_vqa_rad", "data/finetune_arrows/")
+
+
+# def prepro_vqa_slake(
+#     data_root="data/finetune_data/slake",
+#     image_root="data/finetune_data/slake/imgs",
+# ):
+#     # data_root = "data/finetune_data/slake/"
+#     # image_root = f"{data_root}/imgs"
+
+#     random.seed(42)
+
+#     data = {"train": [], "val": [], "test": []}
+
+#     for split, file in zip(["train", "val", "test"], ["train.json", "validate.json", "test.json"]):
+#         with open(f"{data_root}/{file}", "r") as fp:
+#             samples = json.load(fp)
+#             for sample in samples:
+#                 if sample["q_lang"] != "en":
+#                     continue
+#                 img_path = os.path.join(image_root, sample["img_name"])
+#                 qid = sample["qid"]
+#                 question = sample["question"]
+#                 answer = sample["answer"]
+#                 answer_type = sample["answer_type"]
+#                 data[split].append(
+#                     {
+#                         "img_path": img_path,
+#                         "qid": qid,
+#                         "question": question,
+#                         "answer": answer,
+#                         "answer_type": answer_type,
+#                     },
+#                 )
+#     make_arrow_vqa(data, "vqa_slake", "data/finetune_arrows/")
+
