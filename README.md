@@ -1,14 +1,12 @@
 
 # MIMIC-CXR-VQA
 
-[![License:Physionet](https://img.shields.io/badge/License-Physionet-red.svg)](https://physionet.org/)
+[![License:Physionet](https://img.shields.io/badge/License-Physionet-red.svg)]([https://physionet.org/](https://physionet.org/content/mimic-ext-mimic-cxr-vqa/1.0.0/MIMIC-Ext-MIMIC-CXR-VQA/))
 ![GitHub release](https://img.shields.io/github/release/baeseongsu/mimic-cxr-vqa.svg)
 ![GitHub last commit](https://img.shields.io/github/last-commit/baeseongsu/mimic-cxr-vqa.svg)
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 
-
 *A new collection of medical visual question answering dataset on MIMIC-CXR database*
-
 
 ## Overview
 
@@ -17,9 +15,16 @@ The MIMIC-CXR-VQA dataset is a complex (involving set and logical operations), d
 The goal of the MIMIC-CXR-VQA dataset is to serve as a benchmark for evaluating the effectiveness of current medical VQA approaches. It not only functions as a tool for traditional medical VQA tasks but also has the unique quality of being an image-based Electronic Health Records (EHRs) Question Answering dataset resource. Therefore, we utilize question templates from the MIMIC-CXR-VQA dataset as seed question templates for image modality, to construct a multi-modal EHR QA dataset, [EHRXQA](https://github.com/baeseongsu/ehrxqa).
 
 
+## Updates
+- [07/20/2024] We released [MIMIC-CXR-VQA dataset](https://physionet.org/content/mimic-ext-mimic-cxr-vqa/1.0.0/MIMIC-Ext-MIMIC-CXR-VQA/) on Physionet.
+- [12/12/2023] We presented our research work at NeurIPS 2023 Datasets and Benchmarks Track as a [poster](https://neurips.cc/virtual/2023/poster/73600).
+- [10/28/2023] We released our research paper on [arXiv](https://arxiv.org/abs/2310.18652).
+
+
 ## Table of Contents
 
 - [Overview](#overview)
+- [Updates](#updates)
 - [Features](#features)
 - [Installation](#installation)
   - [For Linux](#for-linux)
