@@ -1,0 +1,38 @@
+[project]
+name = "mimic-cxr-vqa"
+version = "1.0.0"
+description = "MIMIC-CXR-VQA: A new collection of medical visual question answering dataset on MIMIC-CXR database"
+authors = [
+    {name = "Seongsu Bae", email = "seongsu@kaist.ac.kr"},
+    {name = "Daeun Kyung", email = "kyungdaeun@kaist.ac.kr"},
+]
+requires-python = ">=3.12"
+readme = "README.md"
+license = {text = "MIT"}
+keywords = [
+    "medical",
+    "healthcare",
+    "visual-question-answering",
+    "vqa",
+    "chest-xray",
+    "mimic-cxr",
+    "dataset",
+]
+
+dependencies = [
+    "pandas>=3.0.0",
+    "tqdm>=4.67.0",
+    "scikit-learn>=1.8.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/baeseongsu/mimic-cxr-vqa"
+Repository = "https://github.com/baeseongsu/mimic-cxr-vqa"
+Documentation = "https://github.com/baeseongsu/mimic-cxr-vqa#readme"
+"Bug Reports" = "https://github.com/baeseongsu/mimic-cxr-vqa/issues"
+"Paper (arXiv)" = "https://arxiv.org/abs/2310.18652"
+"Dataset (Physionet)" = "https://physionet.org/content/mimic-ext-mimic-cxr-vqa/1.0.0/"
+Changelog = "https://github.com/baeseongsu/mimic-cxr-vqa/blob/master/CHANGELOG.md"
+
+[dependency-groups]
+dev = []

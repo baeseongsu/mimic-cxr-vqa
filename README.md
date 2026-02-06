@@ -1,7 +1,6 @@
-
 # MIMIC-CXR-VQA
 
-[![License:Physionet](https://img.shields.io/badge/License-Physionet-red.svg)]([https://physionet.org/](https://physionet.org/content/mimic-ext-mimic-cxr-vqa/1.0.0/MIMIC-Ext-MIMIC-CXR-VQA/))
+[![License:Physionet](https://img.shields.io/badge/License-Physionet-red.svg)](https://physionet.org/content/mimic-ext-mimic-cxr-vqa/1.0.0/)
 ![GitHub release](https://img.shields.io/github/release/baeseongsu/mimic-cxr-vqa.svg)
 ![GitHub last commit](https://img.shields.io/github/last-commit/baeseongsu/mimic-cxr-vqa.svg)
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
@@ -12,194 +11,155 @@
 
 The MIMIC-CXR-VQA dataset is a complex (involving set and logical operations), diverse (with 48 templates), and large-scale (approximately 377K) resource, designed specifically for Visual Question Answering (VQA) tasks in the medical domain. Primarily focusing on chest radiographs, this dataset was mainly derived from the MIMIC-CXR-JPG and Chest ImaGenome datasets, both of which were sourced from Physionet.
 
-The goal of the MIMIC-CXR-VQA dataset is to serve as a benchmark for evaluating the effectiveness of current medical VQA approaches. It not only functions as a tool for traditional medical VQA tasks but also has the unique quality of being an image-based Electronic Health Records (EHRs) Question Answering dataset resource. Therefore, we utilize question templates from the MIMIC-CXR-VQA dataset as seed question templates for image modality, to construct a multi-modal EHR QA dataset, [EHRXQA](https://github.com/baeseongsu/ehrxqa).
-
+The goal of the MIMIC-CXR-VQA dataset is to serve as a benchmark for evaluating the effectiveness of current medical VQA approaches. It not only functions as a tool for traditional medical VQA tasks but also has the unique quality of being an image-based Electronic Health Records (EHRs) Question Answering dataset resource. Therefore, we utilize question templates from the MIMIC-CXR-VQA dataset as seed question templates for image modality, to construct a multi-modal EHR QA dataset, [EHRXQA](https://github.com/baeseongsu/ehrxqa).
 
 ## Updates
-- [07/20/2024] We released [MIMIC-CXR-VQA dataset](https://physionet.org/content/mimic-ext-mimic-cxr-vqa/1.0.0/MIMIC-Ext-MIMIC-CXR-VQA/) on Physionet.
+
+- [07/20/2024] We released [MIMIC-CXR-VQA dataset](https://physionet.org/content/mimic-ext-mimic-cxr-vqa/1.0.0/) on Physionet.
 - [12/12/2023] We presented our research work at NeurIPS 2023 Datasets and Benchmarks Track as a [poster](https://neurips.cc/virtual/2023/poster/73600).
 - [10/28/2023] We released our research paper on [arXiv](https://arxiv.org/abs/2310.18652).
 
+## Reproducing the Dataset
 
-## Table of Contents
+### Prerequisites
 
-- [Overview](#overview)
-- [Updates](#updates)
-- [Features](#features)
-- [Installation](#installation)
-  - [For Linux](#for-linux)
-- [Setup](#setup)
-- [Usage](#usage)
-  - [Privacy](#privacy)
-  - [Access Requirements](#access-requirements)
-  - [Accessing the MIMIC-CXR-VQA Dataset](#accessing-the-mimic-cxr-vqa-dataset)
-  - [Downloading MIMIC-CXR-JPG Images](#downloading-mimic-cxr-jpg-images)
-  - [Dataset Structure](#dataset-structure)
-  - [Dataset Description](#dataset-description)
-- [Versioning](#versioning)
-- [Contributing](#contributing)
-- [Contact](#contact)
-- [Acknowledgements](#acknowledgements)
-- [Citation](#citation)
-- [License](#license)
+- **Python 3.12+**
+- **PhysioNet credentialed account** with signed DUAs for:
+  - [MIMIC-CXR-JPG v2.0.0](https://physionet.org/sign-dua/mimic-cxr-jpg/2.0.0/)
+  - [Chest ImaGenome v1.0.0](https://physionet.org/sign-dua/chest-imagenome/1.0.0/)
+  - [MIMIC-IV v2.2](https://physionet.org/sign-dua/mimiciv/2.2/)
 
+<details>
+<summary><b>New to PhysioNet?</b> Click to see credentialing instructions</summary>
 
-## Features
+1. [Register for a PhysioNet account](https://physionet.org/register/)
+2. Follow the [credentialing instructions](https://physionet.org/credential-application/)
+3. Complete the [CITI Data or Specimens Only Research training course](https://physionet.org/about/citi-course/)
+4. Sign the DUA for each required dataset (links above)
 
-- [x] Provide a script to download source datasets (MIMIC-CXR-JPG, Chest ImaGenome, and MIMIC-IV) from Physionet.
-- [x] Provide a script to preprocess the source datasets.
-- [x] Provide a script to generate the MIMIC-CXR-VQA dataset (with answer information).
+</details>
 
-## Installation
+### Environment Setup
 
-### For Linux:
+<details>
+<summary><b>Using UV (Recommended)</b></summary>
 
-Ensure that you have Python 3.8.5 or higher installed on your machine. Set up the environment and install the required packages using the commands below:
+```bash
+# Install UV
+curl -LsSf https://astral.sh/uv/install.sh | sh
 
-```
-# Set up the environment
-conda create --name mimiccxrvqa python=3.8.5
-
-# Activate the environment
-conda activate mimiccxrvqa
-
-# Install required packages
-pip install pandas==1.1.3 tqdm==4.65.0 scikit-learn==0.23.2
-```
-
-## Setup
-
-Clone this repository and navigate into it:
-
-```
+# Clone and setup
 git clone https://github.com/baeseongsu/mimic-cxr-vqa.git
 cd mimic-cxr-vqa
+
+# Create environment and install dependencies
+uv venv --python 3.12
+source .venv/bin/activate  # On Windows: .venv\Scripts\activate
+uv pip install pandas tqdm scikit-learn
 ```
 
-## Usage
+</details>
 
-### Privacy
+<details>
+<summary><b>Using Conda</b></summary>
 
-We take data privacy very seriously. All of the data you access through this repository has been carefully prepared to prevent any privacy breaches or data leakage. You can use this data with confidence, knowing that all necessary precautions have been taken.
+```bash
+# Clone repository
+git clone https://github.com/baeseongsu/mimic-cxr-vqa.git
+cd mimic-cxr-vqa
 
-### Access Requirements
+# Create environment and install dependencies
+conda create -n mimiccxrvqa python=3.12
+conda activate mimiccxrvqa
+pip install pandas tqdm scikit-learn
+```
 
-The MIMIC-CXR-VQA dataset is constructed from the MIMIC-CXR-JPG (v2.0.0), Chest ImaGenome (v1.0.0), and MIMIC-IV (v2.2). All these source datasets require a credentialed Physionet license. Due to these requirements and in adherence to the Data Use Agreement (DUA), only credentialed users can access the MIMIC-CXR-VQA dataset files (see Access Policy). To access the source datasets, you must fulfill all of the following requirements:
+</details>
 
-1. Be a [credentialed user](https://physionet.org/settings/credentialing/)
-    - If you do not have a PhysioNet account, register for one [here](https://physionet.org/register/).
-    - Follow these [instructions](https://physionet.org/credential-application/) for credentialing on PhysioNet.
-    - Complete the "CITI Data or Specimens Only Research" [training course](https://physionet.org/about/citi-course/).
-2. Sign the data use agreement (DUA) for each project
-    - https://physionet.org/sign-dua/mimic-cxr-jpg/2.0.0/
-    - https://physionet.org/sign-dua/chest-imagenome/1.0.0/
-    - https://physionet.org/sign-dua/mimiciv/2.2/
+### Running the Reproduction Script
 
-### Accessing the MIMIC-CXR-VQA Dataset
+**Option 1: Build from pre-downloaded datasets**
 
-<!-- While the complete MIMIC-CXR-VQA dataset is being prepared for publication on the Physionet platform, we provide partial access to the dataset via this repository for credentialed users. The MIMIC-CXR-VQA dataset mainly comprises three components: an image (I), a question (Q), and an answer (A). In this partial release, we omit the answer (A) and certain metadata, thereby maintaining privacy by preventing any instance-level information leakage. Moreover, during the creation of the dataset, we carefully implemented an unbiased sampling strategy for images, questions, and answers. This ensures no distribution-level leakage, such as the image-question distribution. -->
-
-To facilitate easy access to the MIMIC-CXR-VQA dataset for users who have pre-downloaded the MIMIC-CXR, MIMIC-IV, and Chest ImaGenome datasets, please ensure the predefined directory global variables (`MIMIC_IV_BASE_DIR`, `MIMIC_CXR_BASE_DIR`, `CHEST_IMAGENOME_BASE_DIR`) in the script align with your local dataset paths.
-
-To generate the MIMIC-CXR-VQA dataset from your pre-downloaded datasets, run the main script as follows:
+If you have already downloaded MIMIC-CXR, MIMIC-IV, and Chest ImaGenome, ensure the directory paths in the script match your local setup, then run:
 
 ```bash
 bash build_dataset.sh
 ```
 
-Alternatively, if you prefer to download the source datasets directly from Physionet and then generate the MIMIC-CXR-VQA dataset, use the script below, which requires your Physionet credentials:
+**Option 2: Download and build**
+
+To download source datasets from PhysioNet and generate the dataset:
 
 ```bash
 bash download_and_build_dataset.sh
 ```
 
-When running the script, you'll be prompted to enter your PhysioNet credentials:
+When prompted, enter your PhysioNet credentials (password will not be displayed).
 
-- **Username**: Type your PhysioNet username and press `Enter`.
-- **Password**: Type your PhysioNet password and press `Enter` (note that the password will not be visible).
+**What these scripts do:**
+1. Download source datasets from PhysioNet (MIMIC-CXR-JPG, Chest ImaGenome, MIMIC-IV)
+2. Preprocess the datasets
+3. Generate complete MIMIC-CXR-VQA dataset with ground-truth answers and metadata
 
-The script undertakes several actions: (1) downloading the source datasets from Physionet, (2) preprocessing these datasets, and (3) generating the complete MIMIC-CXR-VQA dataset by creating ground-truth answer information.
+<details>
+<summary><b>Downloading Images Only</b></summary>
 
-<!-- Ensure you keep your credentials secure. If you encounter any issues, please ensure that you have the necessary permissions, a stable internet connection, and all prerequisite tools installed. -->
+To download only the CXR images relevant to MIMIC-CXR-VQA (rather than all MIMIC-CXR-JPG images):
 
-### Downloading MIMIC-CXR-JPG Images
-
-To enhance user convenience, we will provide a script that allows you to download only the CXR images relevant to the MIMIC-CXR-VQA dataset, rather than downloading all the MIMIC-CXR-JPG images.
-
-```
+```bash
 bash download_images.sh
 ```
 
-During script execution, enter your PhysioNet credentials when prompted:
+This script reads image paths from the dataset JSON files and downloads only the required images from PhysioNet.
 
-- Username: Enter your PhysioNet username and press `Enter`.
-- Password: Enter your PhysioNet password and press `Enter`. The password characters won't appear on screen.
+</details>
 
-This script performs several actions: 1) it reads the image paths from the JSON files of the MIMIC-CXR-VQA dataset; 2) uses these paths to download the corresponding images from the MIMIC-CXR-JPG dataset hosted on Physionet; and 3) saves these images locally in the corresponding directories as per their paths.
-
-### Dataset Structure
-
-The dataset is structured as follows:
+<details>
+<summary><b>Dataset Structure</b></summary>
 
 ```
-mimiccxrvqa
-└── dataset
-    ├── ans2idx.json
-    ├── _train_part1.json
-    ├── _train_part2.json
-    ├── _valid.json
-    ├── _test.json
-    ├── train.json (available post-script execution)
-    ├── valid.json (available post-script execution)
-    └── test.json  (available post-script execution)
+mimiccxrvqa/
+└── dataset/
+    ├── ans2idx.json          # Answer to index mapping
+    ├── _train_part1.json     # Pre-release (without answers)
+    ├── _train_part2.json     # Pre-release (without answers)
+    ├── _valid.json           # Pre-release (without answers)
+    ├── _test.json            # Pre-release (without answers)
+    ├── train.json            # Generated after running script
+    ├── valid.json            # Generated after running script
+    └── test.json             # Generated after running script
 ```
 
-- The `mimiccxrvqa` is the root directory. Within this, the `dataset` directory contains various JSON files that are part of the MIMIC-CXR-VQA dataset.
-- The `ans2idx.json` file is a dictionary mapping from answers to their corresponding indices.
-- `_train_part1.json`, `_train_part2.json`, `_valid.json`, and `_test.json` are pre-release versions of the dataset files corresponding to the training, validation, and testing sets respectively. These versions are intentionally incomplete to safeguard privacy and prevent the leakage of sensitive information; they do not include certain crucial information, such as the answers.
-- Once the main script is executed with valid Physionet credentials, the full versions of these files - `train.json`, `valid.json`, and `test.json` - will be generated. These files contain the complete information, including images, questions, and the corresponding answers for each entry in the respective sets.
+Pre-release files (`_*.json`) are intentionally incomplete to safeguard privacy. Complete files with answers and metadata are generated after running the reproduction script with valid PhysioNet credentials.
 
-### Dataset Description
+</details>
 
-The QA samples in the MIMIC-CXR-VQA dataset are stored in individual `.json` files. Each file contains a list of Python dictionaries with keys that indicate:
+<details>
+<summary><b>Dataset Schema</b></summary>
 
-- `split`: a string indicating its split.
-- `idx`: a number indicating its instance index.
-- `image_id`: a string indicating the associated image ID.
-- `question`: a question string.
-- `content_type`: a string indicating its content type, which can be one of this list:
-    - `anatomy`
-    - `attribute`
-    - `presence`
-    - `abnormality`
-    - `plane`
-    - `gender`
-    - `size`
-- `semantic_type`: a string indicating its semantic type, which can be one of this list:
-    - `verify`
-    - `choose`
-    - `query`
-- `template`: a template string.
-- `template_program`: a string indicating its template program. Each template has a unique program to get its answer from the database.
-- `template_arguments`: a dictionary specifying its template arguments, consisting of five sub-dictionaries that represent the sampled values for arguments in the template. When an argument needs to appear multiple times in a question template, an index is appended to the dictionary.
-    - `object`
-    - `attribute`
-    - `category`
-    - `viewpos`
-    - `gender`
+Each QA sample is a JSON object with the following fields:
 
-Note that these details can be open-sourced without safety concerns and without revealing the dataset's distribution information (including image, question, and answer distributions), thanks to our uniform sampling strategy.
+**Core Fields:**
+- `split`: Dataset split (train/valid/test)
+- `idx`: Instance index
+- `image_id`: Associated image ID
+- `question`: Natural language question
+- `answer`: Answer string (generated by script)
 
-After validating the PhysioNet credentials, the `create_answer.py` script generates the following items:
+**Template Fields:**
+- `content_type`: Content category (anatomy, attribute, presence, abnormality, plane, gender, size)
+- `semantic_type`: Question type (verify, choose, query)
+- `template`: Question template
+- `template_program`: Program to generate answer from database
+- `template_arguments`: Template argument values (object, attribute, category, viewpos, gender)
 
-- `answer`: an answer string.
-- `subject_id`: a string indicating the corresponding subject ID (patient ID).
-- `study_id`: a string indicating the corresponding study ID.
-- `image_path`: a string indicating the corresponding image path.
+**Metadata (generated by script):**
+- `subject_id`: Patient ID
+- `study_id`: Study ID
+- `image_path`: Image file path
 
-To be specific, here is the example instance:
-
-```
+**Example:**
+```json
 {
     "split": "train",
     "idx": 13280,
@@ -210,44 +170,29 @@ To be specific, here is the example instance:
     "template": "Are there signs of both ${attribute_1} and ${attribute_2} in the ${object}?",
     "template_program": "program_5",
     "template_arguments": {
-      "object": {
-        "0": "left lower lung zone"
-      },
-      "attribute": {
-        "0": "pleural effusion",
-        "1": "lung cancer"
-      },
-      "category": {},
-      "viewpos": {},
-      "gender": {}
+        "object": {"0": "left lower lung zone"},
+        "attribute": {"0": "pleural effusion", "1": "lung cancer"}
     },
-	"answer": "Will be generated by dataset_builder/generate_answer.py"
-	"subject_id": "Will be generated by dataset_builder/generate_answer.py"
-	"study_id": "Will be generated by dataset_builder/generate_answer.py"
-	"image_path": "Will be generated by dataset_builder/generate_answer.py"
+    "answer": "no",
+    "subject_id": "10000032",
+    "study_id": "50414267",
+    "image_path": "files/p10/p10000032/s50414267/34c81443-5a19ccad-7b5e431c-4e1dbb28-42a325c0.jpg"
 }
 ```
 
-## Versioning
+</details>
 
-We employ semantic versioning for our dataset, with the current version being v1.0.0. Generally, we will maintain and provide updates only for the latest version of the dataset. However, in cases where significant updates occur or when older versions are required for validating previous research, we may exceptionally retain previous dataset versions for a period of up to one year. For a detailed list of changes made in each version, check out our CHANGELOG.
+## Version
 
-## Contributing
+**Current:** v1.0.0
 
-Contributions to enhance the usability and functionality of this dataset are always welcomed. If you're interested in contributing, feel free to fork this repository, make your changes, and then submit a pull request. For significant changes, please first open an issue to discuss the proposed alterations.
-
-## Contact
-
-For any questions or concerns regarding this dataset, please feel free to reach out to us ([seongsu@kaist.ac.kr](mailto:seongsu@kaist.ac.kr) or [kyungdaeun@kaist.ac.kr](mailto:kyungdaeun@kaist.ac.kr)). We appreciate your interest and are eager to assist.
-
-## Acknowledgements
-
-More details will be provided soon.
+This project uses semantic versioning. For detailed changes, see [CHANGELOG](CHANGELOG.md).
 
 ## Citation
 
 When you use the MIMIC-CXR-VQA dataset, we would appreciate it if you cite the following:
-```
+
+```bibtex
 @article{bae2024ehrxqa,
   title={EHRXQA: A multi-modal question answering dataset for electronic health records with chest x-ray images},
   author={Bae, Seongsu and Kyung, Daeun and Ryu, Jaehee and Cho, Eunbyeol and Lee, Gyubok and Kweon, Sunjun and Oh, Jungwoo and Ji, Lei and Chang, Eric and Kim, Tackeun and others},
@@ -259,4 +204,10 @@ When you use the MIMIC-CXR-VQA dataset, we would appreciate it if you cite the f
 
 ## License
 
-The code in this repository is provided under the terms of the MIT License. The final output of the dataset created using this code, the MIMIC-CXR-VQA, is subject to the terms and conditions of the original datasets from Physionet: [MIMIC-CXR-JPG License](https://physionet.org/content/mimic-cxr/view-license/2.0.0/), [Chest ImaGenome License](https://physionet.org/content/chest-imagenome/view-license/1.0.0/), and [MIMIC-IV License](https://physionet.org/content/mimiciv/view-license/2.2/).
+The code in this repository is provided under the terms of the [MIT License](LICENSE). The final output dataset (MIMIC-CXR-VQA) is subject to the terms and conditions of the original datasets from Physionet: [MIMIC-CXR-JPG License](https://physionet.org/content/mimic-cxr/view-license/2.0.0/), [Chest ImaGenome License](https://physionet.org/content/chest-imagenome/view-license/1.0.0/), and [MIMIC-IV License](https://physionet.org/content/mimiciv/view-license/2.2/).
+
+## Contact
+
+For questions or concerns regarding this dataset, please contact:
+- Seongsu Bae ([seongsu@kaist.ac.kr](mailto:seongsu@kaist.ac.kr))
+- Daeun Kyung ([kyungdaeun@kaist.ac.kr](mailto:kyungdaeun@kaist.ac.kr))
